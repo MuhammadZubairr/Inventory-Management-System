@@ -158,6 +158,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('userName').textContent = getUserName() || 'User';
   document.getElementById('warehouseName').textContent = getWarehouseName() || 'Warehouse';
 
+  // Hide stock operations for VIEWER role
+  const userRole = getUserRole();
+  if (userRole === 'viewer') {
+    // Hide Stock In and Stock Out action cards
+    const quickActionsContainer = document.querySelector('.card-body .row.g-4');
+    if (quickActionsContainer) {
+      const stockInCard = quickActionsContainer.children[0]; // First column (Stock In)
+      const stockOutCard = quickActionsContainer.children[1]; // Second column (Stock Out)
+      
+      if (stockInCard) stockInCard.style.display = 'none';
+      if (stockOutCard) stockOutCard.style.display = 'none';
+      
+      // Make View Products take full width
+      const viewProductsCard = quickActionsContainer.children[2];
+      if (viewProductsCard) {
+        viewProductsCard.className = 'col-12';
+      }
+    }
+  }
+
   // Load dashboard data
   loadDashboardStats();
   
@@ -222,14 +242,15 @@ function displayLowStockItems(items) {
   }
 
   container.innerHTML = items.map(item => {
-    const warehouseStock = item.warehouseStock?.find(ws => ws.warehouse.toString() === getWarehouseId());
-    const quantity = warehouseStock?.quantity || 0;
+    // Backend aggregation returns warehouseQuantity and minStockLevel directly
+    const quantity = item.warehouseQuantity || 0;
+    const minStock = item.minStockLevel || 0;
     
     return `
       <div class="alert alert-warning mb-2">
         <strong>${item.name}</strong><br>
         <small>SKU: ${item.sku}</small><br>
-        <small>Stock: ${quantity} / Min: ${item.minStockLevel}</small>
+        <small>Stock: ${quantity} / Min: ${minStock}</small>
       </div>
     `;
   }).join('');

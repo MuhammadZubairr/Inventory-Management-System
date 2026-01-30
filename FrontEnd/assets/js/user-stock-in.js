@@ -64,6 +64,15 @@ async function checkAuth() {
     return false;
   }
   
+  // Redirect VIEWER role to dashboard (no stock operations allowed)
+  if (user.role === 'viewer') {
+    showAlert('Viewers do not have permission to perform stock operations', 'warning');
+    setTimeout(() => {
+      window.location.href = '/pages/user-dashboard.html';
+    }, 2000);
+    return false;
+  }
+  
   return true;
 }
 
@@ -289,8 +298,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Update stock info panel
           const stockInfo = document.getElementById('currentStockInfo');
-          const warehouseStock = product.stock?.find(s => s.warehouse._id === user.warehouseId);
-          const currentQty = warehouseStock?.quantity || product.quantity || 0;
+          const warehouseStock = product.warehouseStock?.find(s => s.warehouse.toString() === user.warehouseId);
+          const currentQty = warehouseStock?.quantity || 0;
           
           stockInfo.innerHTML = `
             <p><strong>Product:</strong> ${product.name}</p>
