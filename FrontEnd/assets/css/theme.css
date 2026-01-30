@@ -119,6 +119,72 @@ small, .small {
   background-color: var(--bg-secondary);
 }
 
+/* Colored Cards - Force white text for visibility */
+.card.bg-primary,
+.card.bg-primary .card-body,
+.card.bg-primary .card-title,
+.card.bg-primary .card-subtitle,
+.card.bg-primary h1,
+.card.bg-primary h2,
+.card.bg-primary h3,
+.card.bg-primary h4,
+.card.bg-primary h5,
+.card.bg-primary h6 {
+  color: #ffffff !important;
+}
+
+.card.bg-success,
+.card.bg-success .card-body,
+.card.bg-success .card-title,
+.card.bg-success .card-subtitle,
+.card.bg-success h1,
+.card.bg-success h2,
+.card.bg-success h3,
+.card.bg-success h4,
+.card.bg-success h5,
+.card.bg-success h6 {
+  color: #ffffff !important;
+}
+
+.card.bg-info,
+.card.bg-info .card-body,
+.card.bg-info .card-title,
+.card.bg-info .card-subtitle,
+.card.bg-info h1,
+.card.bg-info h2,
+.card.bg-info h3,
+.card.bg-info h4,
+.card.bg-info h5,
+.card.bg-info h6 {
+  color: #ffffff !important;
+}
+
+.card.bg-warning,
+.card.bg-warning .card-body,
+.card.bg-warning .card-title,
+.card.bg-warning .card-subtitle,
+.card.bg-warning h1,
+.card.bg-warning h2,
+.card.bg-warning h3,
+.card.bg-warning h4,
+.card.bg-warning h5,
+.card.bg-warning h6 {
+  color: #ffffff !important;
+}
+
+.card.bg-danger,
+.card.bg-danger .card-body,
+.card.bg-danger .card-title,
+.card.bg-danger .card-subtitle,
+.card.bg-danger h1,
+.card.bg-danger h2,
+.card.bg-danger h3,
+.card.bg-danger h4,
+.card.bg-danger h5,
+.card.bg-danger h6 {
+  color: #ffffff !important;
+}
+
 .card-footer {
   background-color: var(--bg-tertiary);
   border-top-color: var(--border-primary);

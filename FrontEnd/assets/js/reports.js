@@ -206,53 +206,53 @@ function displayInventoryReport(reportData) {
     <!-- Summary Cards -->
     <div class="row g-3 mb-4">
       <div class="col-md-3">
-        <div class="card bg-primary text-white">
+        <div class="card bg-primary" style="background-color: var(--primary-base) !important;">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
-                <h6 class="card-subtitle mb-2 opacity-75">Total Products</h6>
-                <h3 class="card-title mb-0">${summary.totalProducts || 0}</h3>
+                <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Total Products</h6>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">${summary.totalProducts || 0}</h3>
               </div>
-              <i class="bi bi-box-seam fs-1 opacity-50"></i>
+              <i class="bi bi-box-seam fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card bg-success text-white">
+        <div class="card bg-success" style="background-color: var(--success-base) !important;">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
-                <h6 class="card-subtitle mb-2 opacity-75">Total Quantity</h6>
-                <h3 class="card-title mb-0">${(summary.totalQuantity || 0).toLocaleString()}</h3>
+                <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Total Quantity</h6>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">${(summary.totalQuantity || 0).toLocaleString()}</h3>
               </div>
-              <i class="bi bi-stack fs-1 opacity-50"></i>
+              <i class="bi bi-stack fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card bg-info text-white">
+        <div class="card bg-info" style="background-color: var(--info-base) !important;">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
-                <h6 class="card-subtitle mb-2 opacity-75">Total Value</h6>
-                <h3 class="card-title mb-0">$${(summary.totalValue || 0).toFixed(2)}</h3>
+                <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Total Value</h6>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">$${(summary.totalValue || 0).toFixed(2)}</h3>
               </div>
-              <i class="bi bi-currency-dollar fs-1 opacity-50"></i>
+              <i class="bi bi-currency-dollar fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card bg-warning text-white">
+        <div class="card bg-warning" style="background-color: var(--warning-base) !important;">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
               <div>
-                <h6 class="card-subtitle mb-2 opacity-75">Avg Price</h6>
-                <h3 class="card-title mb-0">$${(summary.averagePrice || 0).toFixed(2)}</h3>
+                <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Avg Price</h6>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">$${(summary.averagePrice || 0).toFixed(2)}</h3>
               </div>
-              <i class="bi bi-graph-up fs-1 opacity-50"></i>
+              <i class="bi bi-graph-up fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
           </div>
         </div>
