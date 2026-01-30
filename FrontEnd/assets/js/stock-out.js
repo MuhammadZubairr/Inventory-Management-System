@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadProducts() {
   try {
     console.log('📦 [Stock-Out] Loading products...');
-    const response = await fetch(`${API_BASE_URL}/products?status=available`, {
+    // Remove status filter to load ALL products
+    const response = await fetch(`${API_BASE_URL}/products`, {
       headers: getHeaders()
     });
 
@@ -74,11 +75,49 @@ async function loadProducts() {
       console.log(`📦 [Stock-Out] Found ${products.length} products`);
       
       productSelect.innerHTML = '<option value="">Select Product</option>' +
-        products.map(product => 
-          `<option value="${product._id}" data-stock="${product.quantity}" data-price="${product.unitPrice || 0}">${product.name} (SKU: ${product.sku}) - Stock: ${product.quantity}</option>`
-        ).join('');
+        products.map(product => {
+          const stockInfo = product.quantity > 0 ? `Stock: ${product.quantity}` : 'Out of Stock';
+          return `<option value="${product._id}" data-stock="${product.quantity}" data-price="${product.unitPrice || 0}">${product.name} (SKU: ${product.sku}) - ${stockInfo}</option>`;
+        }).join('');
       
       console.log(`✅ [Stock-Out] Added ${products.length} products to dropdown`);
+      
+      // Initialize Select2 for searchable dropdown
+      if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('#productSelect').select2({
+          theme: 'bootstrap-5',
+          width: '100%',
+          placeholder: 'Search for a product...',
+          allowClear: true,
+          matcher: function(params, data) {
+            // If there are no search terms, return all data
+            if ($.trim(params.term) === '') {
+              return data;
+            }
+
+            // Do not display the item if there is no 'text' property
+            if (typeof data.text === 'undefined') {
+              return null;
+            }
+
+            // Search in product name, SKU, and stock info
+            const searchTerm = params.term.toLowerCase();
+            const text = data.text.toLowerCase();
+            
+            if (text.indexOf(searchTerm) > -1) {
+              return data;
+            }
+
+            // Return `null` if the term should not be displayed
+            return null;
+          }
+        });
+        
+        // Handle Select2 change event
+        $('#productSelect').on('select2:select', function(e) {
+          handleProductChange({ target: e.target });
+        });
+      }
     } else {
       console.warn('⚠️ [Stock-Out] Product select element or products data missing');
     }

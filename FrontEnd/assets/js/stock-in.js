@@ -192,6 +192,27 @@ async function loadProducts() {
         productSearch.placeholder = `Search ${productsData.length} products by name or SKU...`;
         productSearch.disabled = false;
       }
+      
+      // Initialize Select2 on productSelect if it exists and jQuery is available
+      const productSelect = document.getElementById('productSelect');
+      if (productSelect && typeof $ !== 'undefined' && $.fn.select2) {
+        // Populate the select dropdown
+        productSelect.innerHTML = '<option value="">Select Product</option>' +
+          productsData.map(product => {
+            const stockInfo = product.quantity >= 0 ? `Stock: ${product.quantity}` : 'N/A';
+            return `<option value="${product._id}" data-stock="${product.quantity}" data-price="${product.unitPrice || 0}">${product.name} (SKU: ${product.sku}) - ${stockInfo}</option>`;
+          }).join('');
+        
+        // Initialize Select2
+        $('#productSelect').select2({
+          theme: 'bootstrap-5',
+          width: '100%',
+          placeholder: 'Search for a product...',
+          allowClear: true
+        });
+        
+        console.log('✅ Select2 initialized on productSelect');
+      }
     } else {
       console.error('No products found in response or wrong structure');
       console.error('Expected data.data.products to be an array, got:', typeof data.data?.products);
