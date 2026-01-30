@@ -1,7 +1,7 @@
 <!-- Left sidebar navigation -->
-<aside class="col-lg-2 col-md-3 d-none d-md-flex flex-column border-end bg-white" style="min-height: calc(100vh - 56px);">
+<aside id="adminSidebar" class="sidebar-nav bg-white border-end d-flex flex-column" style="min-height: calc(100vh - 56px);">
   <!-- Sidebar header -->
-  <div class="p-3 border-bottom">
+  <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
     <h6 class="text-muted text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 0.05em;">Navigation</h6>
   </div>
 
@@ -73,3 +73,204 @@
     </div>
   </div>
 </aside>
+
+<!-- Sidebar overlay for mobile -->
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- Sidebar Toggle Styles -->
+<style>
+  /* Sidebar styles */
+  .sidebar-nav {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    z-index: 1040;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar-nav.show {
+    transform: translateX(0);
+  }
+
+  /* Keep navbar full width and sticky */
+  .navbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1050 !important;
+  }
+
+  .navbar.sticky-top {
+    position: sticky !important;
+    top: 0 !important;
+  }
+
+  /* Make main content full width always */
+  .container-fluid > .row > main {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    transition: all 0.3s ease-in-out;
+  }
+
+  /* When sidebar is open, resize content to fit alongside sidebar */
+  body.sidebar-open .container-fluid > .row > main {
+    margin-left: 250px !important;
+    flex: 0 0 calc(100% - 250px) !important;
+    max-width: calc(100% - 250px) !important;
+  }
+
+  /* Overlay for mobile only */
+  .sidebar-overlay {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1039;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    .sidebar-overlay.show {
+      display: block;
+      opacity: 1;
+    }
+
+    /* On mobile, don't shift the content */
+    body.sidebar-open .container-fluid > .row > main {
+      margin-left: 0 !important;
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+
+    body.sidebar-open {
+      overflow: hidden;
+    }
+  }
+
+  /* Navbar Toggle Buttons */
+  .navbar-toggle-btn {
+    border: none;
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    background-color: transparent;
+    color: #212529;
+    border-radius: 0.25rem;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+  }
+
+  .navbar-toggle-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .navbar-toggle-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  }
+
+  /* Hide back button by default */
+  #backBtn {
+    display: none;
+  }
+</style>
+
+<!-- Sidebar Toggle Script -->
+<script>
+  (function() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    // Create hamburger and back buttons in navbar
+    const navbar = document.querySelector('.navbar .container-fluid');
+    if (navbar) {
+      // Create container for both buttons
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'position: relative;';
+      
+      // Hamburger button (shows sidebar)
+      const hamburgerBtn = document.createElement('button');
+      hamburgerBtn.id = 'hamburgerBtn';
+      hamburgerBtn.className = 'navbar-toggle-btn';
+      hamburgerBtn.innerHTML = '<i class="bi bi-list" style="font-size: 1.75rem;"></i>';
+      hamburgerBtn.setAttribute('aria-label', 'Open sidebar');
+      hamburgerBtn.title = 'Open Menu';
+      
+      // Back button (hides sidebar)
+      const backBtn = document.createElement('button');
+      backBtn.id = 'backBtn';
+      backBtn.className = 'navbar-toggle-btn';
+      backBtn.innerHTML = '<i class="bi bi-arrow-left" style="font-size: 1.5rem;"></i>';
+      backBtn.setAttribute('aria-label', 'Close sidebar');
+      backBtn.title = 'Close Menu';
+      backBtn.style.display = 'none';
+      
+      btnContainer.appendChild(hamburgerBtn);
+      btnContainer.appendChild(backBtn);
+      
+      // Insert at the beginning of navbar
+      const firstChild = navbar.firstElementChild;
+      navbar.insertBefore(btnContainer, firstChild);
+      
+      // Open sidebar on hamburger click
+      hamburgerBtn.addEventListener('click', function() {
+        sidebar?.classList.add('show');
+        overlay?.classList.add('show');
+        document.body.classList.add('sidebar-open');
+        hamburgerBtn.style.display = 'none';
+        backBtn.style.display = 'inline-block';
+      });
+      
+      // Close sidebar on back button click
+      backBtn.addEventListener('click', function() {
+        closeSidebar();
+      });
+    }
+    
+    // Close sidebar function
+    function closeSidebar() {
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const backBtn = document.getElementById('backBtn');
+      
+      sidebar?.classList.remove('show');
+      overlay?.classList.remove('show');
+      document.body.classList.remove('sidebar-open');
+      
+      if (hamburgerBtn && backBtn) {
+        hamburgerBtn.style.display = 'inline-block';
+        backBtn.style.display = 'none';
+      }
+    }
+    
+    // Overlay click
+    overlay?.addEventListener('click', closeSidebar);
+    
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && sidebar?.classList.contains('show')) {
+        closeSidebar();
+      }
+    });
+    
+    // Close sidebar when clicking a nav link
+    const navLinks = sidebar?.querySelectorAll('.nav-link');
+    navLinks?.forEach(link => {
+      link.addEventListener('click', function() {
+        setTimeout(closeSidebar, 100);
+      });
+    });
+  })();
+</script>
