@@ -1,0 +1,467 @@
+/**
+ * Navbar JavaScript - Admin Name Display and Global Functions
+ * Fetches and displays the logged-in admin's name across all pages
+ * Provides global authentication functions
+ */
+
+// API Base URL
+const API_BASE_URL = 'http://localhost:3001/api';
+
+// Global API error handler - intercepts 401 errors and logs out
+window.handleApiError = function(response, data) {
+  // Check for session expired / unauthorized errors
+  if (response.status === 401) {
+    console.warn('Session expired or invalid. Logging out...');
+    sessionStorage.clear();
+    window.location.href = '/pages/login.html';
+    return true; // Error was handled
+  }
+  return false; // Error not handled, let caller handle it
+};
+
+// Get user from sessionStorage
+function getUser() {
+  // Try to get user object (old format)
+  const userStr = sessionStorage.getItem('user');
+  if (userStr) {
+    try {
+      return JSON.parse(userStr);
+    } catch (e) {
+      // If parsing fails, construct from individual items
+    }
+  }
+  
+  // Construct from individual sessionStorage items (new format)
+  const userName = sessionStorage.getItem('userName');
+  const userEmail = sessionStorage.getItem('userEmail');
+  const userRole = sessionStorage.getItem('userRole');
+  
+  if (userName || userEmail) {
+    return {
+      name: userName,
+      email: userEmail,
+      role: userRole
+    };
+  }
+  
+  return null;
+}
+
+// Get token from sessionStorage
+function getToken() {
+  return sessionStorage.getItem('token');
+}
+
+// Update admin name in navbar
+function updateAdminName() {
+  const user = getUser();
+  const adminNameElement = document.querySelector('.admin-name');
+  
+  if (adminNameElement && user) {
+    // Display the user's full name if available, otherwise username
+    const displayName = user.fullName || user.name || user.username || 'Admin User';
+    adminNameElement.textContent = displayName;
+  }
+}
+
+// Handle logout
+function handleLogout() {
+  // Clear all sessionStorage
+  sessionStorage.clear();
+  
+  // Redirect to login page
+  window.location.href = '/pages/login.html';
+}
+
+// Check authentication
+async function checkAuth() {
+  const token = getToken();
+  console.log('🔐 [navbar.js] Checking authentication...');
+  
+  if (!token) {
+    console.warn('⚠️ [navbar.js] No token found, redirecting to login');
+    window.location.href = '/pages/login.html';
+    return false;
+  }
+  
+  // Validate token with backend
+  try {
+    console.log('🔐 [navbar.js] Validating token with backend...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    console.log('📡 [navbar.js] Response status:', response.status);
+    
+    if (!response.ok) {
+      // Token invalid or expired (401, 403, etc.)
+      console.error('❌ [navbar.js] Token validation failed. Logging out...');
+      sessionStorage.clear();
+      window.location.href = '/pages/login.html';
+      return false;
+    }
+    
+    console.log('✅ [navbar.js] Token validated successfully');
+    return true;
+  } catch (error) {
+    // Only ignore AbortError (from timeout during rapid refresh)
+    // All other errors (network errors, server down, etc.) should log out
+    if (error.name === 'AbortError') {
+      console.warn('⚠️ [navbar.js] Request timeout - page might be refreshing');
+      // Don't logout on timeout, could be rapid refresh
+      return true; // Allow page to load, token still exists
+    }
+    
+    // For ALL other errors (including network errors), log out
+    // This includes: server down, server restart, connection refused, etc.
+    console.error('❌ [navbar.js] Auth validation error:', error.message || error);
+    console.log('🚪 [navbar.js] Logging out and redirecting to login...');
+    sessionStorage.clear();
+    window.location.href = '/pages/login.html';
+    return false;
+  }
+}
+
+// Heartbeat mechanism - Check token validity every 30 seconds
+let heartbeatInterval = null;
+
+function startAuthHeartbeat() {
+  // Clear any existing interval
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+  
+  // Check immediately
+  silentTokenCheck();
+  
+  // Then check every 30 seconds
+  heartbeatInterval = setInterval(() => {
+    silentTokenCheck();
+  }, 30000); // 30 seconds
+  
+  console.log('🔄 Auth heartbeat started - checking token every 30 seconds');
+}
+
+// Silent token validation (doesn't show alerts, just logs out if invalid)
+async function silentTokenCheck() {
+  const token = getToken();
+  
+  if (!token) {
+    // No token, stop heartbeat
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      // Token invalid (server restarted with new instance ID)
+      console.warn('🚨 Token validation failed during heartbeat check');
+      console.log('🔄 Server instance changed - logging out...');
+      
+      // Stop heartbeat
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      
+      // Clear session and redirect
+      sessionStorage.clear();
+      window.location.href = '/pages/login.html';
+    } else {
+      console.log('✅ Heartbeat: Token still valid');
+    }
+  } catch (error) {
+    // Network error - server might be down
+    console.warn('⚠️ Heartbeat check failed:', error.message);
+    
+    // If it's a network error, the server might be restarting
+    // Try one more time after 2 seconds
+    setTimeout(async () => {
+      try {
+        const retryResponse = await fetch(`${API_BASE_URL}/auth/validate`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!retryResponse.ok) {
+          console.error('🚨 Token invalid after server restart');
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          sessionStorage.clear();
+          window.location.href = '/pages/login.html';
+        }
+      } catch (retryError) {
+        console.error('🚨 Server unreachable - logging out');
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        sessionStorage.clear();
+        window.location.href = '/pages/login.html';
+      }
+    }, 2000);
+  }
+}
+
+// Initialize navbar
+document.addEventListener('DOMContentLoaded', function() {
+  // Check authentication (only if admin-auth.js is not present)
+  if (typeof window.adminAuth === 'undefined') {
+    checkAuth();
+  }
+  
+  // Update admin name
+  updateAdminName();
+  
+  // Add logout event listeners to all logout buttons
+  // Only if admin-auth.js is not handling it
+  if (typeof setupLogoutButtons === 'undefined') {
+    const logoutButtons = document.querySelectorAll('.logout-btn');
+    logoutButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        handleLogout();
+      });
+    });
+  }
+  
+  // Initialize global navbar search
+  initializeGlobalSearch();
+  
+  // Start auth heartbeat to detect server restarts
+  const token = getToken();
+  if (token) {
+    startAuthHeartbeat();
+  }
+});
+
+// Global Search Functionality
+function initializeGlobalSearch() {
+  const navbarSearch = document.getElementById('navbarGlobalSearch');
+  if (!navbarSearch) return;
+  
+  // Debounce function for search
+  let searchTimeout;
+  
+  navbarSearch.addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    
+    if (query.length === 0) {
+      hideSearchResults();
+      return;
+    }
+    
+    if (query.length < 2) {
+      return; // Wait for at least 2 characters
+    }
+    
+    searchTimeout = setTimeout(() => {
+      performGlobalSearch(query);
+    }, 300);
+  });
+  
+  // Close search results when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.global-search-container')) {
+      hideSearchResults();
+    }
+  });
+}
+
+async function performGlobalSearch(query) {
+  const token = getToken();
+  if (!token) return;
+  
+  try {
+    // Search in multiple endpoints
+    const [products, suppliers, warehouses, users] = await Promise.allSettled([
+      fetch(`http://localhost:3001/api/products?search=${encodeURIComponent(query)}&limit=3`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : { data: [] }),
+      
+      fetch(`http://localhost:3001/api/suppliers?search=${encodeURIComponent(query)}&limit=3`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : { data: [] }),
+      
+      fetch(`http://localhost:3001/api/warehouses?search=${encodeURIComponent(query)}&limit=3`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : { data: [] }),
+      
+      fetch(`http://localhost:3001/api/users?search=${encodeURIComponent(query)}&limit=3`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : { data: [] })
+    ]);
+    
+    displaySearchResults({
+      products: products.status === 'fulfilled' ? products.value.data : [],
+      suppliers: suppliers.status === 'fulfilled' ? suppliers.value.data : [],
+      warehouses: warehouses.status === 'fulfilled' ? warehouses.value.data : [],
+      users: users.status === 'fulfilled' ? users.value.data : []
+    });
+  } catch (error) {
+    console.error('Global search error:', error);
+  }
+}
+
+function displaySearchResults(results) {
+  let resultsContainer = document.getElementById('globalSearchResults');
+  
+  // Create results container if it doesn't exist
+  if (!resultsContainer) {
+    resultsContainer = document.createElement('div');
+    resultsContainer.id = 'globalSearchResults';
+    resultsContainer.className = 'position-absolute bg-white border rounded-3 shadow-lg mt-1 p-3';
+    resultsContainer.style.cssText = 'top: 100%; left: 0; right: 0; max-height: 500px; overflow-y: auto; z-index: 1050;';
+    
+    const searchContainer = document.querySelector('.global-search-container');
+    if (searchContainer) {
+      searchContainer.style.position = 'relative';
+      searchContainer.appendChild(resultsContainer);
+    }
+  }
+  
+  // Build results HTML
+  let html = '';
+  let hasResults = false;
+  
+  // Products
+  if (results.products && results.products.length > 0) {
+    hasResults = true;
+    html += `
+      <div class="mb-3">
+        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+          <i class="bi bi-box-seam me-1"></i> Products
+        </h6>
+        <div class="list-group list-group-flush">
+    `;
+    results.products.forEach(product => {
+      html += `
+        <a href="/pages/products.html" class="list-group-item list-group-item-action border-0 py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${product.name}</div>
+              <small class="text-muted">SKU: ${product.sku} | Qty: ${product.quantity}</small>
+            </div>
+            <i class="bi bi-arrow-right text-muted"></i>
+          </div>
+        </a>
+      `;
+    });
+    html += `</div></div>`;
+  }
+  
+  // Suppliers
+  if (results.suppliers && results.suppliers.length > 0) {
+    hasResults = true;
+    html += `
+      <div class="mb-3">
+        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+          <i class="bi bi-building me-1"></i> Suppliers
+        </h6>
+        <div class="list-group list-group-flush">
+    `;
+    results.suppliers.forEach(supplier => {
+      html += `
+        <a href="/pages/suppliers.html" class="list-group-item list-group-item-action border-0 py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${supplier.name}</div>
+              <small class="text-muted">${supplier.email || supplier.contactPerson || ''}</small>
+            </div>
+            <i class="bi bi-arrow-right text-muted"></i>
+          </div>
+        </a>
+      `;
+    });
+    html += `</div></div>`;
+  }
+  
+  // Warehouses
+  if (results.warehouses && results.warehouses.length > 0) {
+    hasResults = true;
+    html += `
+      <div class="mb-3">
+        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+          <i class="bi bi-house me-1"></i> Warehouses
+        </h6>
+        <div class="list-group list-group-flush">
+    `;
+    results.warehouses.forEach(warehouse => {
+      html += `
+        <a href="/pages/warehouses.html" class="list-group-item list-group-item-action border-0 py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${warehouse.name}</div>
+              <small class="text-muted">${warehouse.location || ''}</small>
+            </div>
+            <i class="bi bi-arrow-right text-muted"></i>
+          </div>
+        </a>
+      `;
+    });
+    html += `</div></div>`;
+  }
+  
+  // Users
+  if (results.users && results.users.length > 0) {
+    hasResults = true;
+    html += `
+      <div class="mb-3">
+        <h6 class="text-muted text-uppercase small fw-bold mb-2">
+          <i class="bi bi-people me-1"></i> Users
+        </h6>
+        <div class="list-group list-group-flush">
+    `;
+    results.users.forEach(user => {
+      html += `
+        <a href="manage-users.html" class="list-group-item list-group-item-action border-0 py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">${user.name}</div>
+              <small class="text-muted">${user.email}</small>
+            </div>
+            <i class="bi bi-arrow-right text-muted"></i>
+          </div>
+        </a>
+      `;
+    });
+    html += `</div></div>`;
+  }
+  
+  if (!hasResults) {
+    html = `
+      <div class="text-center py-4">
+        <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+        <p class="text-muted mt-2 mb-0">No results found</p>
+      </div>
+    `;
+  }
+  
+  resultsContainer.innerHTML = html;
+  resultsContainer.style.display = 'block';
+}
+
+function hideSearchResults() {
+  const resultsContainer = document.getElementById('globalSearchResults');
+  if (resultsContainer) {
+    resultsContainer.style.display = 'none';
+  }
+}
