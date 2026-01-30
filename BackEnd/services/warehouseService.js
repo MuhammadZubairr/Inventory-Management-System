@@ -363,6 +363,8 @@ class WarehouseService {
 
     // Create transaction records for audit trail
     const transferNote = notes || `Transfer from ${sourceWarehouse.name} to ${destWarehouse.name}`;
+    const unitPrice = product.unitPrice || 0;
+    const totalPrice = quantity * unitPrice;
 
     await Transaction.create([
       {
@@ -370,18 +372,24 @@ class WarehouseService {
         product: productId,
         type: 'stock_out',
         quantity: quantity,
+        unitPrice: unitPrice,
+        totalPrice: totalPrice,
         warehouse: fromWarehouse,
         notes: transferNote,
-        performedBy: userId
+        performedBy: userId,
+        status: 'completed'
       },
       {
         transactionNumber: `TRANS-IN-${Date.now() + 1}`,
         product: productId,
         type: 'stock_in',
         quantity: quantity,
+        unitPrice: unitPrice,
+        totalPrice: totalPrice,
         warehouse: toWarehouse,
         notes: transferNote,
-        performedBy: userId
+        performedBy: userId,
+        status: 'completed'
       }
     ]);
 

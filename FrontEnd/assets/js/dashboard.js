@@ -228,8 +228,15 @@ async function loadRecentTransactions() {
     const result = await response.json();
     console.log('Transactions API response:', result);
     
-    // Handle different response formats
-    const transactions = Array.isArray(result) ? result : (result.data || result.transactions || []);
+    // Handle different response formats - backend returns { success: true, data: { transactions: [] } }
+    let transactions = [];
+    if (result.data && result.data.transactions) {
+      transactions = result.data.transactions;
+    } else if (Array.isArray(result.data)) {
+      transactions = result.data;
+    } else if (Array.isArray(result)) {
+      transactions = result;
+    }
 
     if (!transactions || transactions.length === 0) {
       transactionsContainer.innerHTML = `
@@ -244,12 +251,12 @@ async function loadRecentTransactions() {
     }
 
     transactionsContainer.innerHTML = transactions.map(transaction => {
-      const typeIcon = transaction.type === 'in' 
+      const typeIcon = transaction.type === 'stock_in' 
         ? '<i class="bi bi-arrow-down-circle text-success"></i>' 
         : '<i class="bi bi-arrow-up-circle text-danger"></i>';
       
-      const typeText = transaction.type === 'in' ? 'Stock In' : 'Stock Out';
-      const typeBadgeClass = transaction.type === 'in' ? 'bg-success' : 'bg-danger';
+      const typeText = transaction.type === 'stock_in' ? 'Stock In' : 'Stock Out';
+      const typeBadgeClass = transaction.type === 'stock_in' ? 'bg-success' : 'bg-danger';
       
       const productName = transaction.product?.name || 'N/A';
       const statusBadge = `<span class="badge ${typeBadgeClass} badge-status">${transaction.status || 'completed'}</span>`;
@@ -269,11 +276,16 @@ async function loadRecentTransactions() {
     }).join('');
   } catch (error) {
     console.error('Error loading recent transactions:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
     transactionsContainer.innerHTML = `
       <tr>
         <td colspan="5" class="text-center py-4 text-danger">
           <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
           Failed to load transactions
+          <div class="small mt-2">${error.message}</div>
         </td>
       </tr>
     `;

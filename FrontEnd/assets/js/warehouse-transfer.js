@@ -289,9 +289,11 @@ async function loadRecentTransfers() {
 
     const data = await response.json();
     
-    // Filter only transfer transactions
+    // Filter only transfer transactions (stock_out only to avoid duplicates)
+    // Each transfer creates 2 transactions: stock_out and stock_in
+    // We only show stock_out to avoid showing the same transfer twice
     const transfers = data.data.transactions.filter(t => 
-      t.notes && t.notes.includes('Transfer from')
+      t.notes && t.notes.includes('Transfer from') && t.type === 'stock_out'
     );
 
     displayTransfers(transfers);
@@ -316,6 +318,16 @@ function displayTransfers(transfers) {
     const date = new Date(transfer.transactionDate);
     const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
+    // Parse transfer note to get destination warehouse
+    // Format: "Transfer from [Source] to [Destination]"
+    let destinationName = 'N/A';
+    if (transfer.notes) {
+      const match = transfer.notes.match(/Transfer from .+ to (.+)/);
+      if (match) {
+        destinationName = match[1];
+      }
+    }
+    
     return `
       <tr>
         <td><small>${formattedDate}</small></td>
@@ -323,16 +335,8 @@ function displayTransfers(transfers) {
           ${transfer.product?.name || 'N/A'}
           <br><small class="text-muted">${transfer.product?.sku || ''}</small>
         </td>
-        <td>
-          ${transfer.type === 'stock_out' ? 
-            (transfer.warehouse?.name || 'N/A') : 
-            '<i class="text-muted">-</i>'}
-        </td>
-        <td>
-          ${transfer.type === 'stock_in' ? 
-            (transfer.warehouse?.name || 'N/A') : 
-            '<i class="text-muted">-</i>'}
-        </td>
+        <td>${transfer.warehouse?.name || 'N/A'}</td>
+        <td>${destinationName}</td>
         <td><strong>${transfer.quantity}</strong> units</td>
         <td>${transfer.performedBy?.name || transfer.performedBy?.email || 'Unknown'}</td>
         <td><small class="text-muted">${transfer.notes || '-'}</small></td>

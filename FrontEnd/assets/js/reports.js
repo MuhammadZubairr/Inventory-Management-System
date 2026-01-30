@@ -436,7 +436,16 @@ async function loadTransactionsReport() {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
     
-    const response = await fetch(`${window.API_BASE_URL}/transactions?sort=-createdAt&limit=100`, {
+    console.log(`📅 [Transactions Report] Filtering for last ${daysAgo} days (from ${startDate.toLocaleDateString()})`);
+    
+    // Build query params with date filter
+    const params = new URLSearchParams({
+      sort: '-createdAt',
+      limit: '1000', // Increased limit
+      startDate: startDate.toISOString()
+    });
+    
+    const response = await fetch(`${window.API_BASE_URL}/transactions?${params.toString()}`, {
       headers: getReportHeaders()
     });
 
@@ -447,7 +456,7 @@ async function loadTransactionsReport() {
     const result = await response.json();
     const transactions = result.data.transactions || [];
 
-    // Filter by date range
+    // Filter by date range (client-side as backup)
     const filteredTransactions = transactions.filter(t => {
       const txDate = new Date(t.createdAt);
       return txDate >= startDate;
@@ -578,7 +587,16 @@ async function loadStockMovementReport() {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
     
-    const response = await fetch(`${window.API_BASE_URL}/transactions?sort=-createdAt&limit=100`, {
+    console.log(`📅 [Stock Movement Report] Filtering for last ${daysAgo} days (from ${startDate.toLocaleDateString()})`);
+    
+    // Build query params with date filter
+    const params = new URLSearchParams({
+      sort: '-createdAt',
+      limit: '1000', // Increased limit
+      startDate: startDate.toISOString()
+    });
+    
+    const response = await fetch(`${window.API_BASE_URL}/transactions?${params.toString()}`, {
       headers: getReportHeaders()
     });
 
@@ -589,7 +607,7 @@ async function loadStockMovementReport() {
     const result = await response.json();
     const transactions = result.data.transactions || [];
 
-    // Filter by date range
+    // Filter by date range (client-side as backup)
     const filteredTransactions = transactions.filter(t => {
       const txDate = new Date(t.createdAt);
       return txDate >= startDate;

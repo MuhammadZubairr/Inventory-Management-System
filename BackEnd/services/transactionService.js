@@ -1,7 +1,7 @@
 import Transaction from '../models/Transaction.js';
 import productService from './productService.js';
 import ApiError from '../utils/ApiError.js';
-import { HTTP_STATUS, TRANSACTION_TYPES } from '../config/constants.js';
+import { HTTP_STATUS, TRANSACTION_TYPES, TRANSACTION_STATUS } from '../config/constants.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -40,6 +40,7 @@ class TransactionService {
         product,
         quantity,
         type,
+        status: TRANSACTION_STATUS.COMPLETED, // Mark as completed immediately for stock operations
         unitPrice,
         totalPrice,
         supplier: supplier || null,
