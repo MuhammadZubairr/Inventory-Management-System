@@ -1,7 +1,10 @@
 // Stock In Management JavaScript
-// API_BASE_URL is provided by navbar.js
+// API_BASE_URL is provided by config.js via window.API_BASE_URL
 
 // Note: getToken() and checkAuth() are provided by navbar.js
+
+// Get API_BASE_URL from global window object
+const API_BASE_URL = window.API_BASE_URL;
 
 // API Headers with token
 const getHeaders = () => ({
@@ -105,8 +108,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           const productPrice = this.getAttribute('data-price');
           const productName = this.querySelector('strong').textContent;
           
+          console.log('Product selected:', { productId, productName, productStock, productPrice });
+          
           // Set hidden input value
           productSelect.value = productId;
+          
+          console.log('Hidden input value set to:', productSelect.value);
+          console.log('Hidden input name attribute:', productSelect.name);
           
           // Set search input to show selected product
           productSearch.value = productName;
@@ -329,8 +337,15 @@ async function handleStockIn(e) {
     supplier: formData.get('supplier') || undefined
   };
 
+  // Debug logging
+  console.log('Form submitted - Transaction Data:', transactionData);
+  console.log('Product value from form:', formData.get('product'));
+  console.log('Hidden input element:', document.getElementById('productSelect'));
+  console.log('Hidden input value:', document.getElementById('productSelect')?.value);
+
   // Validate
-  if (!transactionData.product) {
+  if (!transactionData.product || transactionData.product === '' || transactionData.product === 'null') {
+    console.error('Product validation failed. Product value:', transactionData.product);
     showAlert('Please select a product', 'warning');
     return;
   }
