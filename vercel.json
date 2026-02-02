@@ -10,12 +10,28 @@
       "destination": "FrontEnd/assets/$1"
     },
     {
+      "source": "/login",
+      "destination": "FrontEnd/pages/login.html"
+    },
+    {
       "source": "/components/(.*)",
       "destination": "FrontEnd/components/$1"
     },
     {
       "source": "/",
       "destination": "FrontEnd/pages/admin.html"
+    },
+    {
+      "source": "/(.*).html",
+      "destination": "frontend/pages/$1.html"
+    },
+    {
+      "source": "/(.*).css",
+      "destination": "frontend/assets/css/$1.css"
+    },
+    {
+      "source": "/(.*).js",
+      "destination": "frontend/assets/js/$1.js"
     },
     {
       "source": "/(.*)",
