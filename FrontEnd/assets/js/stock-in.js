@@ -324,26 +324,35 @@ async function loadWarehouses() {
 async function handleStockIn(e) {
   e.preventDefault();
 
-  const formData = new FormData(stockInForm);
+  // Get values directly from form elements instead of FormData
+  const productSelectElement = document.getElementById('productSelect');
+  const warehouseSelectElement = document.getElementById('warehouseSelect');
+  const quantityElement = document.getElementById('quantity');
+  const unitPriceElement = document.getElementById('unitPrice');
+  const supplierSelectElement = document.getElementById('supplierSelect');
+
   const transactionData = {
-    product: formData.get('product'),
-    warehouse: formData.get('warehouse'),
+    product: productSelectElement?.value || '',
+    warehouse: warehouseSelectElement?.value || '',
     type: 'stock_in',
-    quantity: parseInt(formData.get('quantity')),
-    unitPrice: parseFloat(formData.get('unitPrice')),
-    supplier: formData.get('supplier') || undefined
+    quantity: parseInt(quantityElement?.value || '0'),
+    unitPrice: parseFloat(unitPriceElement?.value || '0'),
+    supplier: supplierSelectElement?.value || undefined
   };
 
   // Debug logging
   console.log('Form submitted - Transaction Data:', transactionData);
-  console.log('Product value from form:', formData.get('product'));
-  console.log('Hidden input element:', document.getElementById('productSelect'));
-  console.log('Hidden input value:', document.getElementById('productSelect')?.value);
+  console.log('Product ID:', transactionData.product);
+  console.log('Hidden input element:', productSelectElement);
+  console.log('Hidden input value:', productSelectElement?.value);
+  console.log('Warehouse:', transactionData.warehouse);
+  console.log('Quantity:', transactionData.quantity);
+  console.log('Unit Price:', transactionData.unitPrice);
 
   // Validate
   if (!transactionData.product || transactionData.product === '' || transactionData.product === 'null') {
     console.error('Product validation failed. Product value:', transactionData.product);
-    showAlert('Please select a product', 'warning');
+    showAlert('Please select a product from the search dropdown', 'warning');
     return;
   }
 
