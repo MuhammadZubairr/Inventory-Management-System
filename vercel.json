@@ -23,7 +23,7 @@
       "destination": "FrontEnd/pages/$1.html"
     },
     {
-      "source": "/login",
+      "source": "/",
       "destination": "FrontEnd/pages/login.html"
     },
     {
