@@ -6,8 +6,12 @@
       "destination": "BackEnd/index.js"
     },
     {
+      "source": "/",
+      "destination": "frontend/pages/admin.html"
+    },
+    {
       "source": "/(.*)",
-      "destination": "FrontEnd/pages/$1"
+      "destination": "frontend/pages/$1"
     }
   ]
 }
