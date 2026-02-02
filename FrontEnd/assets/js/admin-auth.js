@@ -8,12 +8,10 @@ window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
 
 // Check authentication and authorization
 async function checkAdminAccess() {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   
-  // Check for user data in both old and new formats
-  const userStr = sessionStorage.getItem('user');
-  const userName = sessionStorage.getItem('userName');
-  const userRole = sessionStorage.getItem('userRole');
+  // Check for user data
+  const userStr = localStorage.getItem('user');
 
   // Redirect to login if no token
   if (!token) {
@@ -21,25 +19,17 @@ async function checkAdminAccess() {
     return;
   }
 
-  // Get user data from either format
+  // Get user data
   let user;
   if (userStr) {
-    // Old format: JSON string in 'user' key
     try {
       user = JSON.parse(userStr);
     } catch (e) {
       console.error('Error parsing user data:', e);
-      sessionStorage.clear();
+      localStorage.clear();
       window.location.href = '/pages/login.html';
       return;
     }
-  } else if (userName && userRole) {
-    // New format: individual session storage items
-    user = {
-      name: userName,
-      email: sessionStorage.getItem('userEmail'),
-      role: userRole
-    };
   } else {
     // No user data found
     window.location.href = '/pages/login.html';
@@ -49,7 +39,7 @@ async function checkAdminAccess() {
   // Check if user is admin (only admin can access admin panel)
   if (user.role !== 'admin') {
     alert('Access denied. Admin privileges required.');
-    sessionStorage.clear();
+    localStorage.clear();
     window.location.href = '/pages/login.html';
     return;
   }
@@ -81,7 +71,7 @@ async function checkAdminAccess() {
       const errorData = await response.json().catch(() => ({}));
       console.error('❌ Admin token validation failed:', errorData);
       console.warn('🚪 Logging out and redirecting to login...');
-      sessionStorage.clear();
+      localStorage.clear();
       window.location.href = '/pages/login.html';
       return;
     }
@@ -105,7 +95,7 @@ async function checkAdminAccess() {
     // This includes: server down, server restart, connection refused, etc.
     console.error('❌ Auth check failed:', error.message || error);
     console.log('🚪 Logging out and redirecting to login...');
-    sessionStorage.clear();
+    localStorage.clear();
     window.location.href = '/pages/login.html';
   }
 }
@@ -131,7 +121,7 @@ function displayAdminInfo(user) {
 
 // Logout function
 function handleLogout() {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
 
   if (token) {
     // Call backend logout endpoint
@@ -143,8 +133,8 @@ function handleLogout() {
     }).catch(err => console.error('Logout error:', err));
   }
 
-  // Clear session storage
-  sessionStorage.clear();
+  // Clear local storage
+  localStorage.clear();
 
   // Redirect to login
   window.location.href = '/pages/login.html';
@@ -186,7 +176,7 @@ function startAdminAuthHeartbeat() {
 
 // Silent token validation for admin
 async function silentAdminTokenCheck() {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   
   if (!token) {
     if (adminHeartbeatInterval) {
@@ -212,7 +202,7 @@ async function silentAdminTokenCheck() {
         clearInterval(adminHeartbeatInterval);
       }
       
-      sessionStorage.clear();
+      localStorage.clear();
       window.location.href = '/pages/login.html';
     } else {
       console.log('✅ Admin heartbeat: Token still valid');
@@ -234,13 +224,13 @@ async function silentAdminTokenCheck() {
         if (!retryResponse.ok) {
           console.error('🚨 Admin token invalid after server restart');
           if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
-          sessionStorage.clear();
+          localStorage.clear();
           window.location.href = '/pages/login.html';
         }
       } catch (retryError) {
         console.error('🚨 Server unreachable - logging out admin');
         if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
-        sessionStorage.clear();
+        localStorage.clear();
         window.location.href = '/pages/login.html';
       }
     }, 2000);
@@ -253,7 +243,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupLogoutButtons();
   
   // Start heartbeat to detect server restarts
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   if (token) {
     startAdminAuthHeartbeat();
   }
@@ -264,9 +254,8 @@ window.adminAuth = {
   checkAccess: checkAdminAccess,
   logout: handleLogout,
   getUser: () => {
-    const userStr = sessionStorage.getItem('user');
+    const userStr = localStorage.getItem('user');
     if (userStr) {
-      // Old format
       try {
         return JSON.parse(userStr);
       } catch (e) {
@@ -274,19 +263,7 @@ window.adminAuth = {
         return null;
       }
     }
-    
-    // New format
-    const userName = sessionStorage.getItem('userName');
-    const userRole = sessionStorage.getItem('userRole');
-    if (userName && userRole) {
-      return {
-        name: userName,
-        email: sessionStorage.getItem('userEmail'),
-        role: userRole
-      };
-    }
-    
     return null;
   },
-  getToken: () => sessionStorage.getItem('token'),
+  getToken: () => localStorage.getItem('token'),
 };

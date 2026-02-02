@@ -150,18 +150,18 @@ async function handleLogin(event) {
 
     // Send login request
     // This tells the browser to send data to your BACKEND login route
-const response = await fetch('/api/auth/login', { 
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData)
-});
-    // const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(formData),
-    // });
+// const response = await fetch('/api/auth/login', { 
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(formData)
+// });
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
 
     const data = await response.json();
 
@@ -176,19 +176,9 @@ const response = await fetch('/api/auth/login', {
       throw new Error(`Your account is ${user.status}. Please contact administrator.`);
     }
 
-    // Store token and user data in sessionStorage
-    sessionStorage.setItem('token', token);
-    sessionStorage.setItem('userId', user._id);
-    sessionStorage.setItem('userName', user.name);
-    sessionStorage.setItem('userEmail', user.email);
-    sessionStorage.setItem('userRole', user.role);
-
-    // Store warehouse info if user has assigned warehouse
-    if (user.warehouse) {
-      sessionStorage.setItem('warehouseId', user.warehouse._id);
-      sessionStorage.setItem('warehouseName', user.warehouse.name);
-      sessionStorage.setItem('warehouseCode', user.warehouse.code);
-    }
+    // Store token and user data in localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
 
     // Show success message
     showAlert('Login successful! Redirecting...', 'success');

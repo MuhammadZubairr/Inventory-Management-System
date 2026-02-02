@@ -344,7 +344,8 @@
 </style>
 
 <!-- Sidebar Toggle Script -->
-<script>
+<!-- <script>
+  
   (function() {
     const sidebar = document.getElementById('adminSidebar');
     const overlay = document.getElementById('sidebarOverlay');
@@ -427,5 +428,93 @@
         setTimeout(closeSidebar, 100);
       });
     });
+  })();
+</script> -->
+
+<!-- Sidebar Toggle Script -->
+<script>
+  (function() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const SIDEBAR_STATE_KEY = 'sidebarOpen'; // localStorage key
+    
+    // Create hamburger and back buttons in navbar
+    const navbar = document.querySelector('.navbar .container-fluid');
+    if (navbar) {
+      // Create container for both buttons
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'position: relative;';
+      
+      // Hamburger button (shows sidebar)
+      const hamburgerBtn = document.createElement('button');
+      hamburgerBtn.id = 'hamburgerBtn';
+      hamburgerBtn.className = 'navbar-toggle-btn';
+      hamburgerBtn.innerHTML = '<i class="bi bi-list" style="font-size: 1.75rem;"></i>';
+      hamburgerBtn.setAttribute('aria-label', 'Open sidebar');
+      hamburgerBtn.title = 'Open Menu';
+      
+      // Back button (hides sidebar)
+      const backBtn = document.createElement('button');
+      backBtn.id = 'backBtn';
+      backBtn.className = 'navbar-toggle-btn';
+      backBtn.innerHTML = '<i class="bi bi-arrow-left" style="font-size: 1.5rem;"></i>';
+      backBtn.setAttribute('aria-label', 'Close sidebar');
+      backBtn.title = 'Close Menu';
+      backBtn.style.display = 'none';
+      
+      btnContainer.appendChild(hamburgerBtn);
+      btnContainer.appendChild(backBtn);
+      
+      // Insert at the beginning of navbar
+      const firstChild = navbar.firstElementChild;
+      navbar.insertBefore(btnContainer, firstChild);
+      
+      // CHANGE 1: Function to open sidebar and save state
+      function openSidebar() {
+        sidebar?.classList.add('show');
+        overlay?.classList.add('show');
+        document.body.classList.add('sidebar-open');
+        hamburgerBtn.style.display = 'none';
+        backBtn.style.display = 'inline-block';
+        localStorage.setItem(SIDEBAR_STATE_KEY, 'true'); // Save state
+      }
+      
+      // CHANGE 2: Function to close sidebar and save state
+      function closeSidebar() {
+        sidebar?.classList.remove('show');
+        overlay?.classList.remove('show');
+        document.body.classList.remove('sidebar-open');
+        hamburgerBtn.style.display = 'inline-block';
+        backBtn.style.display = 'none';
+        localStorage.setItem(SIDEBAR_STATE_KEY, 'false'); // Save state
+      }
+      
+      // CHANGE 3: Restore sidebar state on page load
+      const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+      if (savedState === 'true') {
+        openSidebar();
+      } else {
+        closeSidebar();
+      }
+      
+      // Open sidebar on hamburger click
+      hamburgerBtn.addEventListener('click', openSidebar);
+      
+      // Close sidebar on back button click
+      backBtn.addEventListener('click', closeSidebar);
+      
+      // Overlay click
+      overlay?.addEventListener('click', closeSidebar);
+      
+      // Close on ESC key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && sidebar?.classList.contains('show')) {
+          closeSidebar();
+        }
+      });
+      
+      // CHANGE 4: Remove auto-close on navigation - state persists
+      // (Removed the code that closes sidebar when clicking nav links)
+    }
   })();
 </script>

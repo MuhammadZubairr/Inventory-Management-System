@@ -3,14 +3,17 @@
  * Handles profile updates and password changes
  */
 
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
+// Ensure API_BASE_URL is available on window object (don't redeclare as const)
+window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
+
+// Use window.API_BASE_URL throughout this file to avoid conflicts
 const UPLOAD_BASE_URL = 'http://localhost:3001';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication
-    const token = sessionStorage.getItem('token');
+    // Check authentication - use localStorage (consistent with admin-auth.js)
+    const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = 'login.html';
+        window.location.href = '../login.html';
         return;
     }
 
@@ -37,10 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const token = localStorage.getItem('token');
         const formData = new FormData();
         formData.append('name', document.getElementById('profile-name').value);
-        formData.append('phone', document.getElementById('profile-phone').value);
-        formData.append('department', document.getElementById('profile-dept').value);
         
         const imageFile = profileImageInput.files[0];
         if (imageFile) {
@@ -50,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showToast('Saving changes...', 'info');
             
-            const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            const response = await fetch(`${window.API_BASE_URL}/users/profile`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -62,14 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 showToast('Profile updated successfully!', 'success');
-                // Update session storage
-                sessionStorage.setItem('userName', data.data.user.name);
-                if (data.data.user.profileImage) {
-                    sessionStorage.setItem('profileImage', data.data.user.profileImage);
-                }
+                // Update local storage
+                const user = data.data?.user || data.user || data.data;
+                localStorage.setItem('user', JSON.stringify(user));
                 
-                // Update UI elements
-                updateUIWithUserData(data.data.user);
+                // Update UI elements immediately
+                updateProfileDisplay(user);
             } else {
                 showToast(data.message || 'Error updating profile', 'danger');
             }
@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const token = localStorage.getItem('token');
         const currentPassword = passwordForm.querySelector('[name="currentPassword"]').value;
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showToast('Updating password...', 'info');
             
-            const response = await fetch(`${API_BASE_URL}/users/change-password`, {
+            const response = await fetch(`${window.API_BASE_URL}/users/change-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -125,100 +126,412 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function loadUserProfile() {
-    const token = sessionStorage.getItem('token');
-    
-    try {
-        // Fetch latest user data from backend
-        // Note: we can use a generic "get my profile" endpoint or reuse getUserById with "me"
-        // For now, let's use the ID stored in session if available, or just use validate endpoint
-        
-        // Let's use the validate endpoint which returns user info
-        const response = await fetch(`${API_BASE_URL}/auth/validate`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.data.user) {
-            const user = data.data.user;
-            updateUIWithUserData(user);
-        } else {
-            // Fallback to session storage if API fails
-            const fallbackUser = {
-                name: sessionStorage.getItem('userName'),
-                email: sessionStorage.getItem('userEmail'),
-                role: sessionStorage.getItem('userRole'),
-                profileImage: sessionStorage.getItem('profileImage')
-            };
-            updateUIWithUserData(fallbackUser);
-        }
-    } catch (error) {
-        console.error('Error loading profile:', error);
-    }
-}
-
-function updateUIWithUserData(user) {
-    // Update inputs
-    document.getElementById('profile-name').value = user.name || '';
-    document.getElementById('profile-email').value = user.email || '';
-    document.getElementById('profile-phone').value = user.phone || '';
-    document.getElementById('profile-dept').value = user.department || '';
-    
-    // Update display text
-    document.getElementById('display-name').textContent = user.name || 'User';
-    document.getElementById('display-email').textContent = user.email || '';
-    document.getElementById('display-role').textContent = (user.role || 'user').toUpperCase();
-    
-    // Update profile image preview
-    if (user.profileImage) {
-        const imageUrl = user.profileImage.startsWith('http') 
-            ? user.profileImage 
-            : `${UPLOAD_BASE_URL}${user.profileImage}`;
-        document.getElementById('profile-preview-img').src = imageUrl;
-        
-        // Also update navbar images if present
-        document.querySelectorAll('.rounded-circle i.bi-person-fill').forEach(icon => {
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.className = 'rounded-circle';
-            img.style.width = '40px';
-            img.style.height = '40px';
-            img.style.objectFit = 'cover';
-            icon.parentNode.replaceChild(img, icon);
-        });
-        
-        // Update existing profile images in navbar
-        document.querySelectorAll('nav .rounded-circle img').forEach(img => {
-            img.src = imageUrl;
-        });
-    }
-
-    // Update global admin-name elements if they exist
-    document.querySelectorAll('.admin-name').forEach(el => {
-        el.textContent = user.name;
-    });
-}
-
+// Toast notification helper - updated to match usage pattern
 function showToast(message, type = 'info') {
-    const toastEl = document.getElementById('liveToast');
-    const toastTitle = document.getElementById('toast-title');
-    const toastBody = document.getElementById('toast-message');
-    const toastIcon = document.getElementById('toast-icon');
+  const toastEl = document.getElementById('liveToast');
+  
+  // Check if toast element exists, if not, use alert as fallback
+  if (!toastEl) {
+    alert(message);
+    return;
+  }
+  
+  const toastIcon = document.getElementById('toast-icon');
+  const toastTitle = document.getElementById('toast-title');
+  const toastMessage = document.getElementById('toast-message');
+  
+  const icons = {
+    success: 'bi-check-circle-fill text-success',
+    danger: 'bi-x-circle-fill text-danger',
+    warning: 'bi-exclamation-triangle-fill text-warning',
+    info: 'bi-info-circle-fill text-primary'
+  };
+  
+  const titles = {
+    success: 'Success',
+    danger: 'Error',
+    warning: 'Warning',
+    info: 'Info'
+  };
+  
+  if (toastIcon) toastIcon.className = `bi me-2 ${icons[type] || icons.info}`;
+  if (toastTitle) toastTitle.textContent = titles[type] || titles.info;
+  if (toastMessage) toastMessage.textContent = message;
+  
+  const toast = new bootstrap.Toast(toastEl);
+  toast.show();
+}
 
-    // Set colors based on type
-    toastEl.className = `toast border-0 shadow-lg`;
-    if (type === 'danger') toastEl.classList.add('bg-danger', 'text-white');
-    else if (type === 'success') toastEl.classList.add('bg-success', 'text-white');
-    else if (type === 'warning') toastEl.classList.add('bg-warning', 'text-dark');
-    else toastEl.classList.add('bg-primary', 'text-white');
+// Update all profile displays consistently
+function updateProfileDisplay(user) {
+  console.log('Updating profile display with:', user);
+  
+  const name = user.name || 'Admin User';
+  const email = user.email || '';
+  const role = user.role || 'Administrator';
+  const profileImage = user.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 
-    toastTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-    toastBody.textContent = message;
+  // Update localStorage
+  localStorage.setItem('user', JSON.stringify(user));
 
-    const toast = new bootstrap.Toast(toastEl);
-    toast.show();
+  // Update all name displays
+  document.querySelectorAll('.user-display-name, .admin-name').forEach(el => {
+    el.textContent = name;
+  });
+
+  // Update all email displays
+  document.querySelectorAll('.user-display-email').forEach(el => {
+    el.textContent = email;
+  });
+
+  // Update all role displays
+  document.querySelectorAll('.user-display-role').forEach(el => {
+    el.textContent = role;
+  });
+
+  // Update profile images
+  const profileImg = document.getElementById('profile-preview-img');
+  const navbarImg = document.getElementById('navbar-profile-img');
+  
+  if (profileImg) profileImg.src = profileImage;
+  if (navbarImg) navbarImg.src = profileImage;
+  
+  // Also update any other profile images
+  document.querySelectorAll('.navbar-profile-img').forEach(img => {
+    img.src = profileImage;
+  });
+  
+  // Trigger custom event for same-page updates
+  window.dispatchEvent(new CustomEvent('userProfileUpdated', { detail: user }));
+  
+  // Call navbar update function if available
+  if (typeof window.updateAdminName === 'function') {
+    window.updateAdminName();
+  }
+}
+
+// Load user profile data from backend
+async function loadUserProfile() {
+  console.log('Loading user profile...');
+  console.log('API_BASE_URL:', window.API_BASE_URL);
+  
+  try {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (!token) {
+      console.error('No token found');
+      window.location.href = '../login.html';
+      return;
+    }
+
+    // Try to load from localStorage first as fallback
+    if (userData) {
+      try {
+        const localUser = JSON.parse(userData);
+        console.log('Using localStorage user data:', localUser);
+        
+        const nameInput = document.getElementById('profile-name');
+        const emailInput = document.getElementById('profile-email');
+        
+        if (nameInput) nameInput.value = localUser.name || '';
+        if (emailInput) emailInput.value = localUser.email || '';
+        
+        updateProfileDisplay(localUser);
+      } catch (e) {
+        console.error('Error parsing localStorage user:', e);
+      }
+    }
+
+    // Now try to fetch from backend
+    // Try multiple possible endpoints
+    const possibleEndpoints = [
+      '/api/users/profile',
+      '/api/auth/profile', 
+      '/api/auth/me',
+      '/users/profile',
+      '/auth/profile'
+    ];
+
+    let profileLoaded = false;
+
+    for (const endpoint of possibleEndpoints) {
+      try {
+        const apiUrl = `${window.API_BASE_URL}${endpoint}`;
+        console.log('Trying endpoint:', apiUrl);
+
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log(`Response from ${endpoint}:`, response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Profile data received from API:', data);
+          
+          // Handle different response formats
+          const user = data.user || data.data || data;
+
+          // Save to localStorage for future use
+          localStorage.setItem('user', JSON.stringify(user));
+
+          const nameInput = document.getElementById('profile-name');
+          const emailInput = document.getElementById('profile-email');
+          
+          if (nameInput) nameInput.value = user.name || '';
+          if (emailInput) emailInput.value = user.email || '';
+
+          updateProfileDisplay(user);
+          profileLoaded = true;
+          console.log('Successfully loaded profile from:', endpoint);
+          break;
+        }
+      } catch (error) {
+        console.log(`Error with ${endpoint}:`, error.message);
+        continue;
+      }
+    }
+
+    if (!profileLoaded && !userData) {
+      console.warn('Could not load profile from any endpoint');
+      showToast('Using cached profile data. Some features may be limited.', 'warning');
+    }
+
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    showToast('Failed to load profile data: ' + error.message, 'danger');
+  }
+}
+
+// Profile form submission
+document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = document.getElementById('save-profile-btn');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+
+  try {
+    const token = localStorage.getItem('token');
+    const name = document.getElementById('profile-name').value.trim();
+    
+    if (!name) {
+      throw new Error('Name cannot be empty');
+    }
+    
+    const userData = { name: name };
+    console.log('Updating profile with:', userData);
+
+    // Try multiple endpoints for update
+    const updateEndpoints = [
+      '/api/users/profile',
+      '/api/auth/profile',
+      '/users/profile'
+    ];
+
+    let updateSuccess = false;
+
+    for (const endpoint of updateEndpoints) {
+      try {
+        const response = await fetch(`${window.API_BASE_URL}${endpoint}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Update response:', result);
+          
+          // Update localStorage
+          const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+          storedUser.name = name;
+          localStorage.setItem('user', JSON.stringify(storedUser));
+          
+          showToast('Your name has been updated successfully!', 'success');
+          await loadUserProfile();
+          updateSuccess = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`Error updating via ${endpoint}:`, error.message);
+        continue;
+      }
+    }
+
+    if (!updateSuccess) {
+      throw new Error('Could not update profile. Please check your connection.');
+    }
+
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    showToast(error.message || 'Failed to update profile', 'danger');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+});
+
+// Password form submission
+document.getElementById('password-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+
+  if (newPassword !== confirmPassword) {
+    showToast('New passwords do not match', 'warning');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showToast('Password must be at least 6 characters', 'warning');
+    return;
+  }
+
+  const submitBtn = document.getElementById('update-password-btn');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Updating...';
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const passwordData = {
+      currentPassword: document.getElementById('currentPassword').value,
+      newPassword: newPassword
+    };
+
+    // Try multiple endpoints
+    const passwordEndpoints = [
+      '/api/users/change-password',
+      '/api/auth/change-password',
+      '/auth/change-password'
+    ];
+
+    let passwordChanged = false;
+
+    for (const endpoint of passwordEndpoints) {
+      try {
+        const response = await fetch(`${window.API_BASE_URL}${endpoint}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(passwordData)
+        });
+
+        if (response.ok) {
+          showToast('Password updated successfully!', 'success');
+          e.target.reset();
+          passwordChanged = true;
+          break;
+        } else {
+          const result = await response.json();
+          if (response.status === 400 || response.status === 401) {
+            throw new Error(result.message || 'Current password is incorrect');
+          }
+        }
+      } catch (error) {
+        if (error.message.includes('Current password')) {
+          throw error;
+        }
+        console.log(`Error with ${endpoint}:`, error.message);
+        continue;
+      }
+    }
+
+    if (!passwordChanged) {
+      throw new Error('Could not update password. Please try again.');
+    }
+
+  } catch (error) {
+    console.error('Error updating password:', error);
+    showToast(error.message || 'Failed to update password', 'danger');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+});
+
+// Profile image preview and upload
+document.getElementById('profileImage')?.addEventListener('change', async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select an image file', 'warning');
+    e.target.value = '';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image size should not exceed 5MB', 'warning');
+    e.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const imageSrc = event.target.result;
+    const profileImg = document.getElementById('profile-preview-img');
+    const navbarImg = document.getElementById('navbar-profile-img');
+    
+    if (profileImg) profileImg.src = imageSrc;
+    if (navbarImg) navbarImg.src = imageSrc;
+  };
+  reader.readAsDataURL(file);
+
+  try {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    showToast('Info', 'Uploading profile picture...', 'info');
+
+    const response = await fetch(`${window.API_BASE_URL}/api/users/upload-profile-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to upload image');
+    }
+
+    showToast('Success', 'Profile picture updated successfully!', 'success');
+    await loadUserProfile();
+
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    showToast('Error', error.message || 'Failed to upload profile picture', 'error');
+    await loadUserProfile();
+  }
+});
+
+// Initialize on page load
+console.log('Settings.js loaded');
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, loading profile...');
+  loadUserProfile();
+});
+
+if (document.readyState !== 'loading') {
+  console.log('Document already loaded, loading profile immediately...');
+  loadUserProfile();
 }

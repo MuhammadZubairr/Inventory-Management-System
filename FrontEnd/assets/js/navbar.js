@@ -12,85 +12,85 @@ window.handleApiError = function(response, data) {
   // Check for session expired / unauthorized errors
   if (response.status === 401) {
     console.warn('Session expired or invalid. Logging out...');
-    sessionStorage.clear();
+    localStorage.clear();
     window.location.href = '/pages/login.html';
     return true; // Error was handled
   }
   return false; // Error not handled, let caller handle it
 };
 
-// Get user from sessionStorage
+// Get user from localStorage
 function getUser() {
-  // Try to get user object (old format)
-  const userStr = sessionStorage.getItem('user');
+  // Try to get user object
+  const userStr = localStorage.getItem('user');
   if (userStr) {
     try {
       return JSON.parse(userStr);
     } catch (e) {
-      // If parsing fails, construct from individual items
+      console.error('Error parsing user data:', e);
     }
-  }
-  
-  // Construct from individual sessionStorage items (new format)
-  const userName = sessionStorage.getItem('userName');
-  const userEmail = sessionStorage.getItem('userEmail');
-  const userRole = sessionStorage.getItem('userRole');
-  
-  if (userName || userEmail) {
-    return {
-      name: userName,
-      email: userEmail,
-      role: userRole
-    };
   }
   
   return null;
 }
 
-// Get token from sessionStorage
+// Get token from localStorage
 function getToken() {
-  return sessionStorage.getItem('token');
+  return localStorage.getItem('token');
 }
 
 // Update admin name and profile image in navbar
 function updateAdminName() {
   const user = getUser();
-  const adminNameElement = document.querySelector('.admin-name');
-  const profileImage = sessionStorage.getItem('profileImage');
   const UPLOAD_BASE_URL = 'http://localhost:3001';
   
-  if (adminNameElement && user) {
-    // Display the user's full name if available, otherwise username
-    const displayName = user.fullName || user.name || user.username || 'Admin User';
-    adminNameElement.textContent = displayName;
-  }
-
-  // Update profile image in navbar if it exists
-  if (profileImage) {
-    const imageUrl = profileImage.startsWith('http') 
-      ? profileImage 
-      : `${UPLOAD_BASE_URL}${profileImage}`;
+  console.log('Updating navbar with user:', user);
+  
+  if (user) {
+    // Display the user's name
+    const displayName = user.name || user.username || 'Admin User';
+    const displayEmail = user.email || '';
+    const displayRole = user.role || 'Administrator';
     
-    document.querySelectorAll('.rounded-circle i.bi-person-fill').forEach(icon => {
-      const img = document.createElement('img');
-      img.src = imageUrl;
-      img.className = 'rounded-circle';
-      img.style.width = '40px';
-      img.style.height = '40px';
-      img.style.objectFit = 'cover';
-      icon.parentNode.replaceChild(img, icon);
+    // Update all name elements
+    document.querySelectorAll('.user-display-name, .admin-name').forEach(el => {
+      el.textContent = displayName;
     });
     
-    document.querySelectorAll('nav .rounded-circle img').forEach(img => {
-      img.src = imageUrl;
+    // Update all email elements
+    document.querySelectorAll('.user-display-email').forEach(el => {
+      el.textContent = displayEmail;
     });
+    
+    // Update all role elements
+    document.querySelectorAll('.user-display-role').forEach(el => {
+      el.textContent = displayRole;
+    });
+    
+    // Update profile image
+    const profileImage = user.profileImage;
+    if (profileImage) {
+      const imageUrl = profileImage.startsWith('http') 
+        ? profileImage 
+        : `${UPLOAD_BASE_URL}${profileImage}`;
+      
+      document.querySelectorAll('#navbar-profile-img, .navbar-profile-img').forEach(img => {
+        img.src = imageUrl;
+      });
+    } else {
+      // Use avatar with user's name
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+      document.querySelectorAll('#navbar-profile-img, .navbar-profile-img').forEach(img => {
+        img.src = avatarUrl;
+      });
+    }
   }
 }
 
 // Handle logout
 function handleLogout() {
-  // Clear all sessionStorage
-  sessionStorage.clear();
+  // Clear all localStorage
+  localStorage.clear();
   
   // Redirect to login page
   window.location.href = '/pages/login.html';
@@ -128,7 +128,7 @@ async function checkAuth() {
     if (!response.ok) {
       // Token invalid or expired (401, 403, etc.)
       console.error('❌ [navbar.js] Token validation failed. Logging out...');
-      sessionStorage.clear();
+      localStorage.clear();
       window.location.href = '/pages/login.html';
       return false;
     }
@@ -148,7 +148,7 @@ async function checkAuth() {
     // This includes: server down, server restart, connection refused, etc.
     console.error('❌ [navbar.js] Auth validation error:', error.message || error);
     console.log('🚪 [navbar.js] Logging out and redirecting to login...');
-    sessionStorage.clear();
+    localStorage.clear();
     window.location.href = '/pages/login.html';
     return false;
   }
@@ -206,7 +206,7 @@ async function silentTokenCheck() {
       }
       
       // Clear session and redirect
-      sessionStorage.clear();
+      localStorage.clear();
       window.location.href = '/pages/login.html';
     } else {
       console.log('✅ Heartbeat: Token still valid');
@@ -230,13 +230,13 @@ async function silentTokenCheck() {
         if (!retryResponse.ok) {
           console.error('🚨 Token invalid after server restart');
           if (heartbeatInterval) clearInterval(heartbeatInterval);
-          sessionStorage.clear();
+          localStorage.clear();
           window.location.href = '/pages/login.html';
         }
       } catch (retryError) {
         console.error('🚨 Server unreachable - logging out');
         if (heartbeatInterval) clearInterval(heartbeatInterval);
-        sessionStorage.clear();
+        localStorage.clear();
         window.location.href = '/pages/login.html';
       }
     }, 2000);
@@ -252,6 +252,21 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Update admin name
   updateAdminName();
+  
+  // Make updateAdminName globally accessible
+  window.updateAdminName = updateAdminName;
+  
+  // Listen for storage changes (profile updates from settings page)
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'user' && e.newValue) {
+      updateAdminName();
+    }
+  });
+  
+  // Also listen for custom event for same-page updates
+  window.addEventListener('userProfileUpdated', function() {
+    updateAdminName();
+  });
   
   // Add logout event listeners to all logout buttons
   // Only if admin-auth.js is not handling it
