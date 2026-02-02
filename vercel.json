@@ -11,7 +11,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "frontend/pages/$1"
+      "destination": "FrontEnd/pages/$1"
     }
   ]
 }
