@@ -1,5 +1,5 @@
 // Stock Out Management JavaScript
-// API_BASE_URL is provided by navbar.js
+// API_BASE_URL is provided by config.js via window.API_BASE_URL
 
 // Note: getToken() and checkAuth() are provided by navbar.js
 
@@ -49,7 +49,7 @@ async function loadProducts() {
   try {
     console.log('📦 [Stock-Out] Loading products...');
     // Remove status filter to load ALL products
-    const response = await fetch(`${API_BASE_URL}/products`, {
+    const response = await fetch(`${window.API_BASE_URL}/products`, {
       headers: getHeaders()
     });
 
@@ -129,7 +129,7 @@ async function loadProducts() {
 // Load warehouses for dropdown
 async function loadWarehouses() {
   try {
-    const response = await fetch(`${API_BASE_URL}/warehouses`, {
+    const response = await fetch(`${window.API_BASE_URL}/warehouses`, {
       headers: getHeaders()
     });
 
@@ -231,7 +231,7 @@ async function handleStockOut(e) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/transactions`, {
+    const response = await fetch(`${window.API_BASE_URL}/transactions`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(transactionData)
@@ -268,7 +268,7 @@ async function loadRecentTransactions() {
   if (!recentTransactionsBody) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/transactions?type=stock_out&limit=10&sort=-createdAt`, {
+    const response = await fetch(`${window.API_BASE_URL}/transactions?type=stock_out&limit=10&sort=-createdAt`, {
       headers: getHeaders()
     });
 
@@ -325,7 +325,7 @@ function showAlert(message, type = 'info') {
 // Logout handler
 async function handleLogout() {
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${window.API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: getHeaders()
     });

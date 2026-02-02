@@ -3,9 +3,6 @@
 
 // Note: getToken() and checkAuth() are provided by navbar.js
 
-// Get API_BASE_URL from global window object
-const API_BASE_URL = window.API_BASE_URL;
-
 // API Headers with token
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -159,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadProducts() {
   try {
     console.log('Loading products...'); // Debug log
-    const response = await fetch(`${API_BASE_URL}/products`, {
+    const response = await fetch(`${window.API_BASE_URL}/products`, {
       headers: getHeaders()
     });
 
@@ -250,7 +247,7 @@ async function loadProducts() {
 async function loadSuppliers() {
   try {
     console.log('📦 Loading suppliers...');
-    const response = await fetch(`${API_BASE_URL}/suppliers/active`, {
+    const response = await fetch(`${window.API_BASE_URL}/suppliers/active`, {
       headers: getHeaders()
     });
 
@@ -298,7 +295,7 @@ async function loadSuppliers() {
 // Load warehouses for dropdown
 async function loadWarehouses() {
   try {
-    const response = await fetch(`${API_BASE_URL}/warehouses`, {
+    const response = await fetch(`${window.API_BASE_URL}/warehouses`, {
       headers: getHeaders()
     });
 
@@ -366,7 +363,7 @@ async function handleStockIn(e) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/transactions`, {
+    const response = await fetch(`${window.API_BASE_URL}/transactions`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(transactionData)
@@ -403,7 +400,7 @@ async function loadRecentTransactions() {
   if (!recentTransactionsBody) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/transactions?type=stock_in&limit=10&sort=-createdAt`, {
+    const response = await fetch(`${window.API_BASE_URL}/transactions?type=stock_in&limit=10&sort=-createdAt`, {
       headers: getHeaders()
     });
 
@@ -461,7 +458,7 @@ function showAlert(message, type = 'info') {
 // Logout handler
 async function handleLogout() {
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${window.API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: getHeaders()
     });

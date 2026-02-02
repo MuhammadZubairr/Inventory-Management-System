@@ -8,6 +8,9 @@
 // Fallback to localhost if config.js hasn't set it yet
 window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
 
+// Create local constant for this file
+const API_BASE_URL = window.API_BASE_URL;
+
 // Global API error handler - intercepts 401 errors and logs out
 window.handleApiError = function(response, data) {
   // Check for session expired / unauthorized errors
@@ -35,10 +38,11 @@ function getUser() {
   return null;
 }
 
-// Get token from localStorage
+// Get token from localStorage (exposed globally for other scripts)
 function getToken() {
   return localStorage.getItem('token');
 }
+window.getToken = getToken; // Make globally accessible
 
 // Update admin name and profile image in navbar
 function updateAdminName() {
@@ -154,6 +158,7 @@ async function checkAuth() {
     return false;
   }
 }
+window.checkAuth = checkAuth; // Make globally accessible
 
 // Heartbeat mechanism - Check token validity every 30 seconds
 let heartbeatInterval = null;
