@@ -7,7 +7,7 @@
     },
     {
       "source": "/",
-      "destination": "frontend/pages/admin.html"
+      "destination": "FrontEnd/pages/admin.html"
     },
     {
       "source": "/(.*)",
