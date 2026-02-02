@@ -149,13 +149,19 @@ async function handleLogin(event) {
     setLoading(true);
 
     // Send login request
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
+    // This tells the browser to send data to your BACKEND login route
+const response = await fetch('/api/auth/login', { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+});
+    // const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(formData),
+    // });
 
     const data = await response.json();
 
