@@ -9,10 +9,7 @@
       "source": "/assets/(.*)",
       "destination": "FrontEnd/assets/$1"
     },
-    {
-      "source": "/login",
-      "destination": "FrontEnd/pages/login.html"
-    },
+    
     {
       "source": "/components/(.*)",
       "destination": "FrontEnd/components/$1"
@@ -24,6 +21,10 @@
     {
       "source": "/(.*).html",
       "destination": "FrontEnd/pages/$1.html"
+    },
+    {
+      "source": "/login",
+      "destination": "FrontEnd/pages/login.html"
     },
     {
       "source": "/(.*).css",
