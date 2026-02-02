@@ -145,4 +145,4 @@ app.listen(PORT, () => {
 // ... your existing routes and middleware ...
 
 // This export is what Vercel uses to run your backend
-module.exports = app;
+// module.exports = app;
