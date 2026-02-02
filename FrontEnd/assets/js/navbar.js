@@ -8,9 +8,6 @@
 // Fallback to localhost if config.js hasn't set it yet
 window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
 
-// Create local constant for this file
-const API_BASE_URL = window.API_BASE_URL;
-
 // Global API error handler - intercepts 401 errors and logs out
 window.handleApiError = function(response, data) {
   // Check for session expired / unauthorized errors
@@ -118,7 +115,7 @@ async function checkAuth() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -193,7 +190,7 @@ async function silentTokenCheck() {
   }
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -225,7 +222,7 @@ async function silentTokenCheck() {
     // Try one more time after 2 seconds
     setTimeout(async () => {
       try {
-        const retryResponse = await fetch(`${API_BASE_URL}/auth/validate`, {
+        const retryResponse = await fetch(`${window.API_BASE_URL}/auth/validate`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
