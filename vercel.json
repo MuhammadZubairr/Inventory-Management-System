@@ -23,15 +23,15 @@
     },
     {
       "source": "/(.*).html",
-      "destination": "frontend/pages/$1.html"
+      "destination": "FrontEnd/pages/$1.html"
     },
     {
       "source": "/(.*).css",
-      "destination": "frontend/assets/css/$1.css"
+      "destination": "FrontEnd/assets/css/$1.css"
     },
     {
       "source": "/(.*).js",
-      "destination": "frontend/assets/js/$1.js"
+      "destination": "FrontEnd/assets/js/$1.js"
     },
     {
       "source": "/(.*)",
