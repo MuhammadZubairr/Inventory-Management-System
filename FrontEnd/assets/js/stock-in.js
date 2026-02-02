@@ -13,6 +13,8 @@ const getHeaders = () => ({
 let stockInForm;
 let recentTransactionsBody;
 let productsData = []; // Store all products for searching
+let productSelectElement; // Store reference to hidden input
+let productSearchElement; // Store reference to search input
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
@@ -22,6 +24,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Get DOM elements
   stockInForm = document.getElementById('stockInForm');
   recentTransactionsBody = document.getElementById('recentTransactionsBody');
+  productSelectElement = document.getElementById('productSelect');
+  productSearchElement = document.getElementById('productSearch');
+
+  console.log('✅ DOM Elements loaded:', {
+    stockInForm: !!stockInForm,
+    productSelect: !!productSelectElement,
+    productSearch: !!productSearchElement
+  });
 
   // Load initial data
   loadProducts();
@@ -35,13 +45,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Product search functionality
-  const productSearch = document.getElementById('productSearch');
   const productDropdown = document.getElementById('productDropdown');
-  const productSelect = document.getElementById('productSelect');
 
-  if (productSearch) {
+  if (productSearchElement) {
     // Show dropdown when user types
-    productSearch.addEventListener('input', (e) => {
+    productSearchElement.addEventListener('input', (e) => {
       const searchTerm = e.target.value.toLowerCase().trim();
       
       console.log('Search term:', searchTerm); // Debug
@@ -105,16 +113,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           const productPrice = this.getAttribute('data-price');
           const productName = this.querySelector('strong').textContent;
           
-          console.log('Product selected:', { productId, productName, productStock, productPrice });
+          console.log('✅ Product selected:', { productId, productName, productStock, productPrice });
           
-          // Set hidden input value
-          productSelect.value = productId;
+          // Set hidden input value using global variable
+          if (productSelectElement) {
+            productSelectElement.value = productId;
+            console.log('✅ Hidden input value set to:', productSelectElement.value);
+            console.log('✅ Hidden input name attribute:', productSelectElement.name);
+          } else {
+            console.error('❌ productSelectElement is null!');
+          }
           
-          console.log('Hidden input value set to:', productSelect.value);
-          console.log('Hidden input name attribute:', productSelect.name);
-          
-          // Set search input to show selected product
-          productSearch.value = productName;
+          // Set search input to show selected product using global variable
+          if (productSearchElement) {
+            productSearchElement.value = productName;
+          }
           
           // Update current stock display
           document.getElementById('currentStock').textContent = productStock;
@@ -133,15 +146,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Hide dropdown when clicking outside
     document.addEventListener('click', (e) => {
-      if (!productSearch.contains(e.target) && !productDropdown.contains(e.target)) {
+      if (!productSearchElement.contains(e.target) && !productDropdown.contains(e.target)) {
         productDropdown.style.display = 'none';
       }
     });
 
     // Show dropdown on focus if there's text
-    productSearch.addEventListener('focus', (e) => {
+    productSearchElement.addEventListener('focus', (e) => {
       if (e.target.value.length > 0) {
-        productSearch.dispatchEvent(new Event('input'));
+        productSearchElement.dispatchEvent(new Event('input'));
       }
     });
   }
@@ -324,8 +337,7 @@ async function loadWarehouses() {
 async function handleStockIn(e) {
   e.preventDefault();
 
-  // Get values directly from form elements instead of FormData
-  const productSelectElement = document.getElementById('productSelect');
+  // Get values directly from form elements - use global references where available
   const warehouseSelectElement = document.getElementById('warehouseSelect');
   const quantityElement = document.getElementById('quantity');
   const unitPriceElement = document.getElementById('unitPrice');
@@ -341,17 +353,17 @@ async function handleStockIn(e) {
   };
 
   // Debug logging
-  console.log('Form submitted - Transaction Data:', transactionData);
-  console.log('Product ID:', transactionData.product);
-  console.log('Hidden input element:', productSelectElement);
-  console.log('Hidden input value:', productSelectElement?.value);
-  console.log('Warehouse:', transactionData.warehouse);
-  console.log('Quantity:', transactionData.quantity);
-  console.log('Unit Price:', transactionData.unitPrice);
+  console.log('📝 Form submitted - Transaction Data:', transactionData);
+  console.log('📦 Product ID:', transactionData.product);
+  console.log('🏢 Warehouse:', transactionData.warehouse);
+  console.log('📊 Quantity:', transactionData.quantity);
+  console.log('💰 Unit Price:', transactionData.unitPrice);
+  console.log('🔍 Product Element:', productSelectElement);
+  console.log('🔍 Product Element Value:', productSelectElement?.value);
 
   // Validate
   if (!transactionData.product || transactionData.product === '' || transactionData.product === 'null') {
-    console.error('Product validation failed. Product value:', transactionData.product);
+    console.error('❌ Product validation failed. Product value:', transactionData.product);
     showAlert('Please select a product from the search dropdown', 'warning');
     return;
   }
