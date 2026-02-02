@@ -15,6 +15,7 @@ let recentTransactionsBody;
 let productsData = []; // Store all products for searching
 let productSelectElement; // Store reference to hidden input
 let productSearchElement; // Store reference to search input
+let productSelectDropdown; // Store reference to the select dropdown
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,11 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   recentTransactionsBody = document.getElementById('recentTransactionsBody');
   productSelectElement = document.getElementById('productSelect');
   productSearchElement = document.getElementById('productSearch');
+  productSelectDropdown = document.getElementById('productSelectDropdown');
 
   console.log('✅ DOM Elements loaded:', {
     stockInForm: !!stockInForm,
     productSelect: !!productSelectElement,
-    productSearch: !!productSearchElement
+    productSearch: !!productSearchElement,
+    productSelectDropdown: !!productSelectDropdown
   });
 
   // Load initial data
@@ -42,6 +45,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Event listeners
   if (stockInForm) {
     stockInForm.addEventListener('submit', handleStockIn);
+  }
+
+  // Event listener for dropdown select
+  if (productSelectDropdown) {
+    productSelectDropdown.addEventListener('change', (e) => {
+      const selectedProductId = e.target.value;
+      
+      if (selectedProductId) {
+        // Find the selected product from productsData
+        const selectedProduct = productsData.find(p => p._id === selectedProductId);
+        
+        if (selectedProduct) {
+          console.log('✅ Product selected from dropdown:', selectedProduct.name);
+          
+          // Set the hidden input value
+          productSelectElement.value = selectedProductId;
+          
+          // Update current stock display
+          document.getElementById('currentStock').textContent = selectedProduct.quantity;
+          
+          // Auto-populate unit price
+          const unitPriceInput = document.getElementById('unitPrice');
+          if (unitPriceInput && selectedProduct.unitPrice) {
+            unitPriceInput.value = selectedProduct.unitPrice;
+          }
+          
+          // Clear search input
+          if (productSearchElement) {
+            productSearchElement.value = '';
+          }
+        }
+      }
+    });
   }
 
   // Product search functionality
@@ -113,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const productPrice = this.getAttribute('data-price');
           const productName = this.querySelector('strong').textContent;
           
-          console.log('✅ Product selected:', { productId, productName, productStock, productPrice });
+          console.log('✅ Product selected from search:', { productId, productName, productStock, productPrice });
           
           // Set hidden input value using global variable
           if (productSelectElement) {
@@ -127,6 +163,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Set search input to show selected product using global variable
           if (productSearchElement) {
             productSearchElement.value = productName;
+          }
+          
+          // Clear the dropdown select
+          if (productSelectDropdown) {
+            productSelectDropdown.value = '';
           }
           
           // Update current stock display
@@ -204,32 +245,19 @@ async function loadProducts() {
       console.log('Loaded', productsData.length, 'products for searching');
       console.log('Sample product:', productsData[0]); // Debug - show first product
       
-      // Update placeholder to indicate products are loaded
-      const productSearch = document.getElementById('productSearch');
-      if (productSearch) {
-        productSearch.placeholder = `Search ${productsData.length} products by name or SKU...`;
-        productSearch.disabled = false;
+      // Populate the select dropdown
+      if (productSelectDropdown) {
+        productSelectDropdown.innerHTML = '<option value="">-- Choose from dropdown or search below --</option>' +
+          productsData.map(product => {
+            const stockInfo = product.quantity >= 0 ? `${product.quantity}` : '0';
+            return `<option value="${product._id}">${product.name} (Stock: ${stockInfo})</option>`;
+          }).join('');
+        console.log('✅ Populated product select dropdown with', productsData.length, 'products');
       }
       
-      // Initialize Select2 on productSelect if it exists and jQuery is available
-      const productSelect = document.getElementById('productSelect');
-      if (productSelect && typeof $ !== 'undefined' && $.fn.select2) {
-        // Populate the select dropdown
-        productSelect.innerHTML = '<option value="">Select Product</option>' +
-          productsData.map(product => {
-            const stockInfo = product.quantity >= 0 ? `Stock: ${product.quantity}` : 'N/A';
-            return `<option value="${product._id}" data-stock="${product.quantity}" data-price="${product.unitPrice || 0}">${product.name} (SKU: ${product.sku}) - ${stockInfo}</option>`;
-          }).join('');
-        
-        // Initialize Select2
-        $('#productSelect').select2({
-          theme: 'bootstrap-5',
-          width: '100%',
-          placeholder: 'Search for a product...',
-          allowClear: true
-        });
-        
-        console.log('✅ Select2 initialized on productSelect');
+      // Update search placeholder to indicate products are loaded
+      if (productSearchElement) {
+        productSearchElement.placeholder = `Type to search ${productsData.length} products...`;
       }
     } else {
       console.error('No products found in response or wrong structure');

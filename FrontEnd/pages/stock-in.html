@@ -130,17 +130,25 @@
                   <!-- Stock In form -->
                   <form id="stockInForm" method="post" action="#" aria-label="Stock in form">
                     <div class="row g-3">
-                      <!-- Product search and select -->
+                      <!-- Product select dropdown -->
                       <div class="col-12">
-                        <label for="productSearch" class="form-label">Search Product</label>
+                        <label for="productSelectDropdown" class="form-label">Select Product <span class="text-danger">*</span></label>
+                        <select id="productSelectDropdown" class="form-select">
+                          <option value="">-- Choose from dropdown or search below --</option>
+                          <!-- Products loaded dynamically -->
+                        </select>
+                      </div>
+
+                      <!-- OR Search Product -->
+                      <div class="col-12">
+                        <label for="productSearch" class="form-label">Or Search Product</label>
                         <div class="position-relative">
                           <input 
                             type="text" 
                             id="productSearch" 
                             class="form-control" 
-                            placeholder="Loading products..."
+                            placeholder="Type to search products..."
                             autocomplete="off"
-                            disabled
                           >
                           <input type="hidden" id="productSelect" name="product" required>
                           <div id="productDropdown" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
