@@ -142,3 +142,7 @@ app.listen(PORT, () => {
   logger.info(`🚀 Server is running on http://localhost:${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+// ... your existing routes and middleware ...
+
+// This export is what Vercel uses to run your backend
+module.exports = app;
