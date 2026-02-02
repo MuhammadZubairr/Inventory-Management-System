@@ -9,30 +9,17 @@
       "source": "/assets/(.*)",
       "destination": "FrontEnd/assets/$1"
     },
-    
     {
       "source": "/components/(.*)",
       "destination": "FrontEnd/components/$1"
     },
     {
-      "source": "/",
-      "destination": "FrontEnd/pages/admin.html"
-    },
-    {
-      "source": "/(.*).html",
-      "destination": "FrontEnd/pages/$1.html"
+      "source": "/pages/(.*)",
+      "destination": "FrontEnd/pages/$1"
     },
     {
       "source": "/",
       "destination": "FrontEnd/pages/login.html"
-    },
-    {
-      "source": "/(.*).css",
-      "destination": "FrontEnd/assets/css/$1.css"
-    },
-    {
-      "source": "/(.*).js",
-      "destination": "FrontEnd/assets/js/$1.js"
     },
     {
       "source": "/(.*)",
