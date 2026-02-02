@@ -149,13 +149,26 @@ async function handleLogin(event) {
     setLoading(true);
 
     // Send login request
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
+    // This checks if you are on localhost or on the live web
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001/api'  // Your local backend port
+    : '/api';                      // Your Vercel path
+
+// Use it in your fetch call
+const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(formData)
+});
+    // const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(formData),
+    // });
 
     const data = await response.json();
 
