@@ -3,8 +3,9 @@
  * Handles form validation and submission for user login
  */
 
-// API base URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// Use API_BASE_URL from config.js or window object
+// Fallback to localhost for development
+window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
 
 // Get form elements
 const loginForm = document.getElementById('loginForm');
@@ -155,7 +156,7 @@ async function handleLogin(event) {
 //     headers: { 'Content-Type': 'application/json' },
 //     body: JSON.stringify(formData)
 // });
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

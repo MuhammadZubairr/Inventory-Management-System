@@ -4,8 +4,9 @@
  * Provides global authentication functions
  */
 
-// API Base URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// Use API_BASE_URL from config.js (loaded before this script)
+// Fallback to localhost if config.js hasn't set it yet
+window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3001/api';
 
 // Global API error handler - intercepts 401 errors and logs out
 window.handleApiError = function(response, data) {
