@@ -52,15 +52,38 @@ function getToken() {
   return sessionStorage.getItem('token');
 }
 
-// Update admin name in navbar
+// Update admin name and profile image in navbar
 function updateAdminName() {
   const user = getUser();
   const adminNameElement = document.querySelector('.admin-name');
+  const profileImage = sessionStorage.getItem('profileImage');
+  const UPLOAD_BASE_URL = 'http://localhost:3001';
   
   if (adminNameElement && user) {
     // Display the user's full name if available, otherwise username
     const displayName = user.fullName || user.name || user.username || 'Admin User';
     adminNameElement.textContent = displayName;
+  }
+
+  // Update profile image in navbar if it exists
+  if (profileImage) {
+    const imageUrl = profileImage.startsWith('http') 
+      ? profileImage 
+      : `${UPLOAD_BASE_URL}${profileImage}`;
+    
+    document.querySelectorAll('.rounded-circle i.bi-person-fill').forEach(icon => {
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.className = 'rounded-circle';
+      img.style.width = '40px';
+      img.style.height = '40px';
+      img.style.objectFit = 'cover';
+      icon.parentNode.replaceChild(img, icon);
+    });
+    
+    document.querySelectorAll('nav .rounded-circle img').forEach(img => {
+      img.src = imageUrl;
+    });
   }
 }
 

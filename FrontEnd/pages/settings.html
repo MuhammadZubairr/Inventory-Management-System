@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings — Inventory Management System</title>
+    <!-- Bootstrap 5 CSS (CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Professional Theme CSS -->
+    <link rel="stylesheet" href="../assets/css/theme.css?v=4">
+    <link rel="stylesheet" href="../assets/css/style-pro.css">
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+      .profile-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+      .settings-card {
+        border: none;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+      }
+      .settings-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.05) !important;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+
+    <!-- Top navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+      <div class="container-fluid">
+        <!-- Brand/Logo -->
+        <span class="navbar-brand mb-0 h5 fw-bold">
+          <i class="bi bi-boxes text-primary me-2"></i>Inventory Management System
+        </span>
+
+        <!-- Right side: Notifications, User -->
+        <div class="d-flex align-items-center gap-3">
+          <!-- User Profile -->
+          <div class="dropdown">
+            <button class="btn btn-link text-dark p-0 d-flex align-items-center text-decoration-none" type="button" data-bs-toggle="dropdown">
+              <div class="me-2 text-end d-none d-md-block">
+                <div class="fw-semibold small admin-name">Admin User</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Administrator</div>
+              </div>
+              <div class="profile-img-container">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+              </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-person me-2"></i>Profile Settings</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger logout-btn" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Left sidebar navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main content area -->
+        <main class="col-lg-10 col-md-9 py-4 px-4">
+          <!-- Breadcrumb -->
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+              <li class="breadcrumb-item"><a href="admin.html" class="text-decoration-none">Home</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Settings</li>
+            </ol>
+          </nav>
+          <h1 class="h3 mb-4 fw-bold">Account Settings</h1>
+
+          <div class="row g-4">
+            <!-- Profile Settings -->
+            <div class="col-lg-7">
+              <div class="card settings-card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                  <h5 class="mb-0 fw-bold"><i class="bi bi-person-circle me-2 text-primary"></i>Personal Information</h5>
+                </div>
+                <div class="card-body p-4">
+                  <form id="profile-form">
+                    <div class="row mb-4 align-items-center">
+                      <div class="col-sm-auto mb-3 mb-sm-0 text-center">
+                        <img id="profile-preview-img" src="https://ui-avatars.com/api/?name=Admin+User&background=random" alt="Profile" class="profile-preview mb-2">
+                        <div>
+                          <label for="profileImage" class="btn btn-sm btn-outline-primary">
+                            Change Photo
+                          </label>
+                          <input type="file" id="profileImage" name="profileImage" class="d-none" accept="image/*">
+                        </div>
+                      </div>
+                      <div class="col-sm">
+                        <h5 class="mb-1" id="display-name">Admin User</h5>
+                        <p class="text-muted mb-0" id="display-email">admin@example.com</p>
+                        <span class="badge bg-primary mt-2" id="display-role">Administrator</span>
+                      </div>
+                    </div>
+
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Full Name</label>
+                        <input type="text" class="form-control" name="name" id="profile-name" required>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Email Address</label>
+                        <input type="email" class="form-control" id="profile-email" disabled>
+                        <div class="form-text">Email cannot be changed contact super admin.</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Phone Number</label>
+                        <input type="text" class="form-control" name="phone" id="profile-phone">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Department</label>
+                        <input type="text" class="form-control" name="department" id="profile-dept">
+                      </div>
+                    </div>
+
+                    <div class="mt-4">
+                      <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle me-2"></i>Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Password Change -->
+            <div class="col-lg-5">
+              <div class="card settings-card shadow-sm">
+                <div class="card-header bg-white py-3">
+                  <h5 class="mb-0 fw-bold"><i class="bi bi-shield-lock me-2 text-danger"></i>Security Settings</h5>
+                </div>
+                <div class="card-body p-4">
+                  <form id="password-form">
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold text-uppercase">Current Password</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control" name="currentPassword" required>
+                      </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold text-uppercase">New Password</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                        <input type="password" class="form-control" name="newPassword" id="newPassword" required>
+                      </div>
+                      <div class="form-text">Minimum 6 characters with letters and numbers.</div>
+                    </div>
+                    <div class="mb-4">
+                      <label class="form-label small fw-bold text-uppercase">Confirm New Password</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                      <i class="bi bi-shield-check me-2"></i>Update Password
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Extra info card -->
+              <div class="card mt-4 border-0 bg-primary bg-opacity-10 text-primary-emphasis">
+                <div class="card-body">
+                  <div class="d-flex align-items-start">
+                    <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                    <div>
+                      <h6 class="fw-bold mb-1">Session Info</h6>
+                      <p class="small mb-0">You are currently logged in as Administrator. For security reasons, please logout after your work session.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="bi bi-info-circle me-2 text-primary" id="toast-icon"></i>
+          <strong class="me-auto" id="toast-title">Notification</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toast-message"></div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../assets/js/navbar.js"></script>
+    <script src="../assets/js/admin-auth.js"></script>
+    <script src="../assets/js/sidebar.js"></script>
+    <script src="../assets/js/settings.js"></script>
+  </body>
+</html>

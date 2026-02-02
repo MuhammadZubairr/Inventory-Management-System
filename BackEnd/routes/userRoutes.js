@@ -6,8 +6,10 @@ import {
   updateUser,
   deleteUser,
   changePassword,
+  updateProfile,
 } from '../controllers/userController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
 import validate from '../middleware/validate.js';
 import {
   createUserSchema,
@@ -25,6 +27,26 @@ const router = express.Router();
  * All routes require authentication
  * Some routes require admin role
  */
+
+// @route   PUT /api/users/profile
+// @desc    Update user profile
+// @access  Private
+router.put(
+  '/profile',
+  authenticate,
+  upload.single('profileImage'),
+  updateProfile
+);
+
+// @route   POST /api/users/change-password
+// @desc    Change user password
+// @access  Private
+router.post(
+  '/change-password',
+  authenticate,
+  validate(changePasswordSchema),
+  changePassword
+);
 
 // @route   GET /api/users
 // @desc    Get all users

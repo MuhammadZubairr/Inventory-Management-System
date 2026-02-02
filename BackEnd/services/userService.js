@@ -209,6 +209,40 @@ class UserService {
       throw error;
     }
   }
+
+  /**
+   * Update profile
+   */
+  async updateProfile(userId, updateData) {
+    try {
+      // White list fields that can be updated by the user themselves
+      const allowedFields = ['name', 'phone', 'department', 'profileImage'];
+      const filteredUpdate = {};
+      
+      Object.keys(updateData).forEach(key => {
+        if (allowedFields.includes(key)) {
+          filteredUpdate[key] = updateData[key];
+        }
+      });
+
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { ...filteredUpdate, updatedAt: Date.now() },
+        { new: true, runValidators: true }
+      );
+
+      if (!user) {
+        throw new ApiError(HTTP_STATUS.NOT_FOUND, 'User not found');
+      }
+
+      logger.info('Profile updated successfully', { userId: user._id });
+      
+      return user.toSafeObject();
+    } catch (error) {
+      logger.error('Error updating profile:', error);
+      throw error;
+    }
+  }
 }
 
 export default new UserService();

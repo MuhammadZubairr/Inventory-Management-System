@@ -83,6 +83,8 @@ app.get('/api', (req, res) => {
 // Serve static files from FrontEnd directory (AFTER specific routes)
 app.use(express.static(path.join(__dirname, '../FrontEnd')));
 
+// Static Files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Import models to ensure they are registered with Mongoose
 import './models/User.js';

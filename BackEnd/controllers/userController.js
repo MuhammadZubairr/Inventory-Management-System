@@ -96,3 +96,23 @@ export const changePassword = asyncHandler(async (req, res) => {
     new ApiResponse(HTTP_STATUS.OK, null, 'Password changed successfully')
   );
 });
+
+/**
+ * @route   PUT /api/users/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const updateData = { ...req.body };
+  
+  // If a file was uploaded, add the path to updateData
+  if (req.file) {
+    updateData.profileImage = `/uploads/profiles/${req.file.filename}`;
+  }
+
+  const user = await userService.updateProfile(req.user.id, updateData);
+
+  res.status(HTTP_STATUS.OK).json(
+    new ApiResponse(HTTP_STATUS.OK, { user }, 'Profile updated successfully')
+  );
+});

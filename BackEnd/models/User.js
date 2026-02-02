@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    profileImage: {
+      type: String,
+      default: null,
+    },
     warehouse: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',

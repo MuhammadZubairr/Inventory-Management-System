@@ -7,7 +7,7 @@
 async function loadSidebar() {
   try {
     // Use relative path for better compatibility
-    const response = await fetch('components/sidebar.html');
+    const response = await fetch('../components/sidebar.html');
     const sidebarHTML = await response.text();
     
     // Find the sidebar container and inject the HTML
