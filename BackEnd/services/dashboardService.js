@@ -36,8 +36,13 @@ class DashboardService {
         // Total users
         User.countDocuments(),
         
-        // Low stock products count
-        Product.countDocuments({ status: PRODUCT_STATUS.LOW_STOCK }),
+        // Low stock products count (includes both low stock and out of stock)
+        Product.countDocuments({
+          $or: [
+            { status: PRODUCT_STATUS.LOW_STOCK },
+            { status: PRODUCT_STATUS.OUT_OF_STOCK },
+          ],
+        }),
         
         // Out of stock products count
         Product.countDocuments({ status: PRODUCT_STATUS.OUT_OF_STOCK }),
