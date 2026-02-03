@@ -2,6 +2,16 @@
 // API_BASE_URL is set by config.js
 // getToken() is provided by navbar.js
 
+console.log('📦 [Stock-In] Page loaded');
+console.log('📦 [Stock-In] Initial localStorage check:', {
+  token: localStorage.getItem('token') ? 'EXISTS' : 'MISSING',
+  userRole: localStorage.getItem('userRole') || 'MISSING',
+  userName: localStorage.getItem('userName') || 'MISSING',
+  warehouseId: localStorage.getItem('warehouseId') || 'MISSING',
+  warehouseName: localStorage.getItem('warehouseName') || 'MISSING',
+  allKeys: Object.keys(localStorage)
+});
+
 // Store products data for searching
 let productsData = [];
 
