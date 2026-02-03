@@ -19,6 +19,9 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
   const password = document.getElementById('password').value;
 
   try {
+    console.log('🔐 [Login] Attempting login with:', email);
+    console.log('🔐 [Login] API URL:', window.API_BASE_URL);
+    
     const response = await fetch(`${window.API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
@@ -28,12 +31,19 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
     });
 
     const data = await response.json();
+    
+    console.log('📥 [Login] Response status:', response.status);
+    console.log('📦 [Login] Response data:', data);
 
     if (!response.ok) {
       throw new Error(data.message || 'Login failed');
     }
 
     const { user, token } = data.data;
+    
+    console.log('👤 [Login] User object:', user);
+    console.log('👤 [Login] User has warehouse?', !!user.warehouse);
+    console.log('👤 [Login] Warehouse data:', user.warehouse);
 
     // Check if user is active
     if (user.status !== 'active') {
@@ -52,10 +62,12 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
 
     // Check if warehouse is assigned
     if (!user.warehouse) {
+      console.error('❌ [Login] No warehouse assigned to user');
       showAlert('No warehouse assigned. Please contact administrator.', 'danger');
       return;
     }
 
+    console.log('💾 [Login] Saving to localStorage...');
     // Store user data in localStorage
     localStorage.setItem('token', token);
     localStorage.setItem('userId', user._id);
@@ -65,6 +77,15 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
     localStorage.setItem('warehouseId', user.warehouse._id);
     localStorage.setItem('warehouseName', user.warehouse.name);
     localStorage.setItem('warehouseCode', user.warehouse.code);
+    
+    console.log('✅ [Login] Data saved to localStorage:', {
+      token: 'saved',
+      userId: user._id,
+      userName: user.name,
+      userRole: user.role,
+      warehouseId: user.warehouse._id,
+      warehouseName: user.warehouse.name
+    });
 
     // Show success message
     showAlert('Login successful! Redirecting...', 'success');
@@ -75,7 +96,7 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
     }, 1000);
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ [Login] Login error:', error);
     showAlert(error.message || 'Invalid email or password', 'danger');
   }
 });
