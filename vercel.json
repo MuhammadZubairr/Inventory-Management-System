@@ -1,38 +1,27 @@
 {
   "version": 2,
-  "buildCommand": "cd FrontEnd && echo 'Build complete'",
+  "buildCommand": "echo 'No build needed'",
   "outputDirectory": "FrontEnd",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
-      "source": "/components/(.*)",
-      "destination": "/components/$1"
+      "src": "/components/(.*)",
+      "dest": "/components/$1"
     },
     {
-      "source": "/pages/(.*)",
-      "destination": "/pages/$1"
+      "src": "/pages/(.*)",
+      "dest": "/pages/$1"
     },
     {
-      "source": "/",
-      "destination": "/pages/login.html"
+      "src": "/",
+      "dest": "/pages/login.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/pages/$1"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
+      "src": "/(.*)",
+      "dest": "/pages/$1"
     }
   ]
 }
