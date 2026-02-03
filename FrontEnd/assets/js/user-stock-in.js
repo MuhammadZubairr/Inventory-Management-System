@@ -27,16 +27,24 @@ function getHeaders() {
 
 // Check authentication (user-specific for stock-in)
 async function checkStockInAuth() {
+  console.log('🔐 [Stock-In] Starting authentication check...');
+  
   const user = getUser();
   const token = getToken();
   
+  console.log('🔐 [Stock-In] User:', user);
+  console.log('🔐 [Stock-In] Token:', token ? 'Present' : 'Missing');
+  console.log('🔐 [Stock-In] API URL:', window.API_BASE_URL);
+  
   if (!user || !token) {
+    console.error('❌ [Stock-In] No user or token found. Redirecting to login...');
     window.location.href = 'user-login.html';
     return false;
   }
   
   // Validate token with backend
   try {
+    console.log('🔐 [Stock-In] Validating token with backend...');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
@@ -47,22 +55,30 @@ async function checkStockInAuth() {
     });
     
     clearTimeout(timeoutId);
+    console.log('📡 [Stock-In] Response status:', response.status);
     
     if (!response.ok) {
       // Token invalid or expired
+      console.error('❌ [Stock-In] Token validation failed. Status:', response.status);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ [Stock-In] Error data:', errorData);
       localStorage.clear();
       window.location.href = 'user-login.html';
       return false;
     }
+    
+    console.log('✅ [Stock-In] Token validated successfully');
   } catch (error) {
     // Only ignore AbortError (from timeout during rapid refresh)
     if (error.name === 'AbortError') {
-      console.warn('⚠️ Stock-in auth request timeout - page might be refreshing');
+      console.warn('⚠️ [Stock-In] Request timeout - page might be refreshing');
       return true; // Allow page to continue
     }
     
     // For all other errors, log out
-    console.error('Auth validation error:', error);
+    console.error('❌ [Stock-In] Auth validation error:', error);
+    console.error('❌ [Stock-In] Error name:', error.name);
+    console.error('❌ [Stock-In] Error message:', error.message);
     localStorage.clear();
     window.location.href = 'user-login.html';
     return false;
@@ -70,9 +86,13 @@ async function checkStockInAuth() {
   
   // Redirect admin to admin panel
   if (user.role === 'admin') {
+    console.log('🔀 [Stock-In] Admin detected, redirecting to admin panel...');
     window.location.href = 'admin.html';
     return false;
   }
+  
+  console.log('✅ [Stock-In] Authentication successful');
+  return true;
   
   // Redirect VIEWER role to dashboard (no stock operations allowed)
   if (user.role === 'viewer') {
