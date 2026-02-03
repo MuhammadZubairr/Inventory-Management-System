@@ -186,44 +186,88 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (token) {
     startUserAuthHeartbeat();
   }
+  
+  // Add visual feedback while loading
+  console.log('✅ [User Dashboard] Initialization complete');
+  console.log('👤 [User Dashboard] User info:', {
+    name: getUserName(),
+    warehouse: getWarehouseName(),
+    role: getUserRole()
+  });
 });
 
 // Load dashboard statistics
 async function loadDashboardStats() {
   try {
+    console.log('🔄 [User Dashboard] Loading stats...');
+    console.log('🔑 [User Dashboard] API URL:', window.API_BASE_URL);
+    console.log('🔑 [User Dashboard] Token:', getToken() ? 'Present' : 'Missing');
+    console.log('🔑 [User Dashboard] Headers:', getHeaders());
+    
     const response = await fetch(`${window.API_BASE_URL}/user-dashboard/stats`, {
       headers: getHeaders()
     });
 
+    console.log('📥 [User Dashboard] Response status:', response.status);
+    
     if (!response.ok) {
       if (response.status === 401) {
+        console.log('❌ [User Dashboard] Unauthorized - clearing storage');
         localStorage.clear();
         window.location.href = 'user-login.html';
         return;
       }
+      const errorText = await response.text();
+      console.error('❌ [User Dashboard] Response error:', errorText);
       throw new Error('Failed to load dashboard stats');
     }
 
     const data = await response.json();
+    console.log('📦 [User Dashboard] Data received:', data);
     
     if (data.success && data.data) {
+      console.log('✅ [User Dashboard] Updating dashboard with data:', data.data);
       updateDashboardStats(data.data);
+    } else {
+      console.error('⚠️ [User Dashboard] Invalid data structure:', data);
+      showAlert(`API returned: ${data.message || 'Unknown error'}`, 'warning');
     }
   } catch (error) {
-    console.error('Error loading dashboard stats:', error);
-    showAlert('Failed to load dashboard data', 'danger');
+    console.error('💥 [User Dashboard] Error loading dashboard stats:', error);
+    console.error('💥 [User Dashboard] Error stack:', error.stack);
+    showAlert('Failed to load dashboard data: ' + error.message, 'danger');
   }
 }
 
 // Update dashboard statistics
 function updateDashboardStats(data) {
+  console.log('📊 [User Dashboard] updateDashboardStats called with:', data);
+  
   const { stats, lowStockProducts, recentTransactions } = data;
+  
+  console.log('📊 Stats:', stats);
+  console.log('📦 Low stock products:', lowStockProducts);
+  console.log('💰 Recent transactions:', recentTransactions);
 
   // Update stat cards
-  document.getElementById('totalProducts').textContent = stats.totalProducts || 0;
-  document.getElementById('lowStockCount').textContent = stats.lowStockCount || 0;
-  document.getElementById('totalQuantity').textContent = stats.totalQuantity || 0;
-  document.getElementById('totalValue').textContent = `$${(stats.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalProductsEl = document.getElementById('totalProducts');
+  const lowStockCountEl = document.getElementById('lowStockCount');
+  const totalQuantityEl = document.getElementById('totalQuantity');
+  const totalValueEl = document.getElementById('totalValue');
+  
+  console.log('🎯 DOM Elements:', {
+    totalProducts: totalProductsEl,
+    lowStockCount: lowStockCountEl,
+    totalQuantity: totalQuantityEl,
+    totalValue: totalValueEl
+  });
+  
+  if (totalProductsEl) totalProductsEl.textContent = stats.totalProducts || 0;
+  if (lowStockCountEl) lowStockCountEl.textContent = stats.lowStockCount || 0;
+  if (totalQuantityEl) totalQuantityEl.textContent = stats.totalQuantity || 0;
+  if (totalValueEl) totalValueEl.textContent = `$${(stats.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  console.log('✅ [User Dashboard] Stats updated');
 
   // Display low stock items
   displayLowStockItems(lowStockProducts || []);
