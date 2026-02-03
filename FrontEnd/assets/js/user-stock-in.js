@@ -28,16 +28,26 @@ function getHeaders() {
 // Check authentication (user-specific for stock-in)
 async function checkStockInAuth() {
   console.log('🔐 [Stock-In] Starting authentication check...');
+  console.log('🔐 [Stock-In] window.getToken exists?', typeof window.getToken);
+  console.log('🔐 [Stock-In] getToken exists?', typeof getToken);
   
   const user = getUser();
-  const token = getToken();
+  const token = window.getToken ? window.getToken() : localStorage.getItem('token');
   
   console.log('🔐 [Stock-In] User:', user);
-  console.log('🔐 [Stock-In] Token:', token ? 'Present' : 'Missing');
+  console.log('🔐 [Stock-In] Token:', token ? 'Present (' + token.substring(0, 20) + '...)' : 'Missing');
   console.log('🔐 [Stock-In] API URL:', window.API_BASE_URL);
+  console.log('🔐 [Stock-In] localStorage contents:', {
+    token: localStorage.getItem('token') ? 'exists' : 'missing',
+    userRole: localStorage.getItem('userRole'),
+    userName: localStorage.getItem('userName'),
+    warehouseId: localStorage.getItem('warehouseId')
+  });
   
   if (!user || !token) {
     console.error('❌ [Stock-In] No user or token found. Redirecting to login...');
+    console.error('❌ [Stock-In] User check:', !user ? 'FAILED' : 'PASSED');
+    console.error('❌ [Stock-In] Token check:', !token ? 'FAILED' : 'PASSED');
     window.location.href = 'user-login.html';
     return false;
   }
