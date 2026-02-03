@@ -6,13 +6,20 @@ let allProducts = [];
 
 // Load warehouse and products on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication first
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) {
+        console.log('❌ [Warehouse Products] Not authenticated, redirecting to login');
+        return;
+    }
+    
     // Get warehouse ID and name from URL
     const urlParams = new URLSearchParams(window.location.search);
     currentWarehouseId = urlParams.get('id');
     const warehouseName = urlParams.get('name');
 
     if (!currentWarehouseId) {
-        window.location.href = '/pages/warehouse-list.html';
+        window.location.href = 'warehouse-list.html';
         return;
     }
 
@@ -30,13 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load warehouse details
 async function loadWarehouseDetails() {
     try {
-        const token = sessionStorage.getItem('token');
+        const token = localStorage.getItem('token');
         if (!token) {
-            window.location.href = '/pages/login.html';
+            window.location.href = 'login.html';
             return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/warehouses/${currentWarehouseId}`, {
+        const response = await fetch(`${window.API_BASE_URL}/warehouses/${currentWarehouseId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -44,8 +51,8 @@ async function loadWarehouseDetails() {
         });
 
         if (response.status === 401) {
-            sessionStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
             return;
         }
 
@@ -71,14 +78,14 @@ function displayWarehouseInfo(warehouse) {
 async function loadWarehouseProducts() {
     try {
         console.log('🔍 [Warehouse Products] Loading products for warehouse:', currentWarehouseId);
-        const token = sessionStorage.getItem('token');
+        const token = localStorage.getItem('token');
         if (!token) {
             console.log('❌ [Warehouse Products] No token found');
-            window.location.href = '/pages/login.html';
+            window.location.href = 'login.html';
             return;
         }
 
-        const url = `${API_BASE_URL}/warehouses/${currentWarehouseId}/inventory`;
+        const url = `${window.API_BASE_URL}/warehouses/${currentWarehouseId}/inventory`;
         console.log('📡 [Warehouse Products] Fetching from:', url);
         
         const response = await fetch(url, {
@@ -92,8 +99,8 @@ async function loadWarehouseProducts() {
 
         if (response.status === 401) {
             console.log('❌ [Warehouse Products] Unauthorized');
-            sessionStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
             return;
         }
 
