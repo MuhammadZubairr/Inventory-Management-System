@@ -437,9 +437,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ [Stock-In] Error response:', errorData);
-        console.error('❌ [Stock-In] Validation details:', errorData.errors || errorData.details);
-        throw new Error(errorData.message || 'Failed to add stock');
+        console.error('❌ [Stock-In] Full error response:', JSON.stringify(errorData, null, 2));
+        console.error('❌ [Stock-In] Error object:', errorData);
+        console.error('❌ [Stock-In] Validation errors:', errorData.errors);
+        
+        // Create detailed error message
+        let errorMessage = errorData.message || 'Failed to add stock';
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          const errorList = errorData.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+          errorMessage += ` - ${errorList}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

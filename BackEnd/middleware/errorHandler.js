@@ -28,9 +28,13 @@ const errorHandler = (err, req, res, next) => {
     message,
   };
 
-  // Include error details only in development
-  if (process.env.NODE_ENV === 'development') {
+  // Include validation errors even in production (they're not sensitive)
+  // But only include stack trace in development
+  if (err.errors && Array.isArray(err.errors)) {
     response.errors = err.errors;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
     response.stack = err.stack;
   }
 
