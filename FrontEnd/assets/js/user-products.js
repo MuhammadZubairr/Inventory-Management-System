@@ -1,11 +1,8 @@
 // User Products JavaScript
 // API_BASE_URL is set by config.js
+// getToken() is provided by navbar.js
 
-// Get local storage data
-function getToken() {
-  return localStorage.getItem('token');
-}
-
+// Get user data from local storage
 function getUser() {
   const userRole = localStorage.getItem('userRole');
   const userName = localStorage.getItem('userName');
@@ -25,8 +22,8 @@ function getHeaders() {
   };
 }
 
-// Check authentication
-async function checkAuth() {
+// Check authentication (user-specific for products)
+async function checkProductsAuth() {
   const user = getUser();
   const token = getToken();
   
@@ -224,7 +221,7 @@ async function viewProductDetails(productId) {
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   // Validate authentication first
-  const isAuthenticated = await checkAuth();
+  const isAuthenticated = await checkProductsAuth();
   if (!isAuthenticated) return;
 
   const user = getUser();

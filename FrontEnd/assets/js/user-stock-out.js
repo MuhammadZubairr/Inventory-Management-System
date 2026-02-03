@@ -1,11 +1,8 @@
 // User Stock Out JavaScript
 // API_BASE_URL is set by config.js
+// getToken() is provided by navbar.js
 
-// Get local storage data
-function getToken() {
-  return localStorage.getItem('token');
-}
-
+// Get user data from local storage
 function getUser() {
   const userRole = localStorage.getItem('userRole');
   const userName = localStorage.getItem('userName');
@@ -25,8 +22,8 @@ function getHeaders() {
   };
 }
 
-// Check authentication
-async function checkAuth() {
+// Check authentication (user-specific for stock-out)
+async function checkStockOutAuth() {
   const user = getUser();
   const token = getToken();
   
@@ -156,7 +153,7 @@ async function loadRecentTransactions() {
 // Handle product selection
 document.addEventListener('DOMContentLoaded', async () => {
   // Validate authentication first
-  const isAuthenticated = await checkAuth();
+  const isAuthenticated = await checkStockOutAuth();
   if (!isAuthenticated) return;
 
   const user = getUser();
