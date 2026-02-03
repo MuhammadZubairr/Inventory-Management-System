@@ -1436,3 +1436,44 @@ textarea:focus {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* ========================================================================
+   FIX: Logout Button Hover - Keep text visible
+   ======================================================================== */
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.navbar-dark .btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* Fix for navbar on primary background */
+.bg-primary .btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+/* ========================================================================
+   FIX: Card corners - Remove white corners
+   ======================================================================== */
+.card {
+  background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+}
+
+/* Ensure card body doesn't have white corners */
+.card-body {
+  background: transparent;
+}
+
+/* Fix for rounded elements inside cards */
+.card .rounded,
+.card .rounded-3,
+.card .rounded-circle {
+  background-clip: padding-box;
+  -webkit-background-clip: padding-box;
+}

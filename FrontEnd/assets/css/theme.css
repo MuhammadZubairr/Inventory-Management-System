@@ -106,6 +106,8 @@ small, .small {
   background-color: var(--bg-secondary);
   border-color: var(--border-primary);
   box-shadow: var(--shadow-sm);
+  background-clip: padding-box;
+  overflow: hidden;
 }
 
 .card-header {
@@ -116,7 +118,7 @@ small, .small {
 }
 
 .card-body {
-  background-color: var(--bg-secondary);
+  background-color: transparent;
 }
 
 /* Colored Cards - Force white text for visibility */

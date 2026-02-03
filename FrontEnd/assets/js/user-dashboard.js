@@ -1,16 +1,16 @@
 // User Dashboard JavaScript
 // API_BASE_URL is set by config.js
+// getToken() is provided by navbar.js
 
-// Get token and user data from localStorage
-const getToken = () => localStorage.getItem('token');
+// Get user data from localStorage
 const getUserId = () => localStorage.getItem('userId');
 const getUserName = () => localStorage.getItem('userName');
 const getWarehouseId = () => localStorage.getItem('warehouseId');
 const getWarehouseName = () => localStorage.getItem('warehouseName');
 const getUserRole = () => localStorage.getItem('userRole');
 
-// Check authentication
-async function checkAuth() {
+// Check authentication (user-specific)
+async function checkUserAuth() {
   const token = getToken();
   const userRole = getUserRole();
   
@@ -151,7 +151,7 @@ const getHeaders = () => ({
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async () => {
   // Validate authentication first
-  const isAuthenticated = await checkAuth();
+  const isAuthenticated = await checkUserAuth();
   if (!isAuthenticated) return;
 
   // Display user and warehouse info
