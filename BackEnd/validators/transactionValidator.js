@@ -31,9 +31,9 @@ export const createTransactionSchema = Joi.object({
       'any.required': 'Unit price is required',
     }),
     supplier: Joi.string().optional().allow('', null),
-    referenceNumber: Joi.string(),
-    notes: Joi.string().max(500),
-    reason: Joi.string().max(500),
+    referenceNumber: Joi.string().allow('', null).optional(),
+    notes: Joi.string().max(500).allow('', null).optional(),
+    reason: Joi.string().max(500).allow('', null).optional(),
     transactionDate: Joi.date().default(Date.now),
   }),
 });
