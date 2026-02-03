@@ -272,8 +272,11 @@ async function silentTokenCheck() {
 
 // Initialize navbar
 document.addEventListener('DOMContentLoaded', function() {
-  // Check authentication (only if admin-auth.js is not present)
-  if (typeof window.adminAuth === 'undefined') {
+  // Check if this is a user-specific page (don't run global auth check)
+  const isUserPage = window.location.pathname.includes('user-');
+  
+  // Check authentication (only if admin-auth.js is not present and not a user page)
+  if (typeof window.adminAuth === 'undefined' && !isUserPage) {
     checkAuth();
   }
   
