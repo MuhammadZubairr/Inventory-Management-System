@@ -1,13 +1,13 @@
 // User Login JavaScript
-const API_BASE_URL = 'http://localhost:3001/api';
+// API_BASE_URL is set by config.js
 
 // Check if already logged in
 document.addEventListener('DOMContentLoaded', () => {
-  const token = sessionStorage.getItem('token');
-  const userRole = sessionStorage.getItem('userRole');
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
   
   if (token && userRole && userRole !== 'admin') {
-    window.location.href = '/pages/user-dashboard.html';
+    window.location.href = 'user-dashboard.html';
   }
 });
 
@@ -19,7 +19,7 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
   const password = document.getElementById('password').value;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
     if (user.role === 'admin') {
       showAlert('Admin users should use the admin login page.', 'warning');
       setTimeout(() => {
-        window.location.href = '/pages/login.html';
+        window.location.href = 'login.html';
       }, 2000);
       return;
     }
@@ -56,22 +56,22 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
       return;
     }
 
-    // Store user data in sessionStorage
-    sessionStorage.setItem('token', token);
-    sessionStorage.setItem('userId', user._id);
-    sessionStorage.setItem('userName', user.name);
-    sessionStorage.setItem('userEmail', user.email);
-    sessionStorage.setItem('userRole', user.role);
-    sessionStorage.setItem('warehouseId', user.warehouse._id);
-    sessionStorage.setItem('warehouseName', user.warehouse.name);
-    sessionStorage.setItem('warehouseCode', user.warehouse.code);
+    // Store user data in localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('userId', user._id);
+    localStorage.setItem('userName', user.name);
+    localStorage.setItem('userEmail', user.email);
+    localStorage.setItem('userRole', user.role);
+    localStorage.setItem('warehouseId', user.warehouse._id);
+    localStorage.setItem('warehouseName', user.warehouse.name);
+    localStorage.setItem('warehouseCode', user.warehouse.code);
 
     // Show success message
     showAlert('Login successful! Redirecting...', 'success');
 
     // Redirect to user dashboard
     setTimeout(() => {
-      window.location.href = '/pages/user-dashboard.html';
+      window.location.href = 'user-dashboard.html';
     }, 1000);
 
   } catch (error) {

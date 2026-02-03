@@ -514,7 +514,7 @@ async function handleLogout() {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    sessionStorage.clear();
-    window.location.href = '/pages/login.html';
+    localStorage.clear();
+    window.location.href = 'login.html';
   }
 }

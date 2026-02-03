@@ -1,19 +1,19 @@
 // User Stock In JavaScript
-const API_BASE_URL = 'http://localhost:3001/api';
+// API_BASE_URL is set by config.js
 
 // Store products data for searching
 let productsData = [];
 
-// Get session storage data
+// Get local storage data
 function getToken() {
-  return sessionStorage.getItem('token');
+  return localStorage.getItem('token');
 }
 
 function getUser() {
-  const userRole = sessionStorage.getItem('userRole');
-  const userName = sessionStorage.getItem('userName');
-  const warehouseId = sessionStorage.getItem('warehouseId');
-  const warehouseName = sessionStorage.getItem('warehouseName');
+  const userRole = localStorage.getItem('userRole');
+  const userName = localStorage.getItem('userName');
+  const warehouseId = localStorage.getItem('warehouseId');
+  const warehouseName = localStorage.getItem('warehouseName');
   
   if (userRole && userName) {
     return { role: userRole, name: userName, warehouseId, warehouseName };
@@ -34,33 +34,33 @@ async function checkAuth() {
   const token = getToken();
   
   if (!user || !token) {
-    window.location.href = '/pages/user-login.html';
+    window.location.href = 'user-login.html';
     return false;
   }
   
   // Validate token with backend
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: getHeaders()
     });
     
     if (!response.ok) {
       // Token invalid or expired
-      sessionStorage.clear();
-      window.location.href = '/pages/user-login.html';
+      localStorage.clear();
+      window.location.href = 'user-login.html';
       return false;
     }
   } catch (error) {
     console.error('Auth validation error:', error);
-    sessionStorage.clear();
-    window.location.href = '/pages/user-login.html';
+    localStorage.clear();
+    window.location.href = 'user-login.html';
     return false;
   }
   
   // Redirect admin to admin panel
   if (user.role === 'admin') {
-    window.location.href = '/pages/admin.html';
+    window.location.href = 'admin.html';
     return false;
   }
   
@@ -68,7 +68,7 @@ async function checkAuth() {
   if (user.role === 'viewer') {
     showAlert('Viewers do not have permission to perform stock operations', 'warning');
     setTimeout(() => {
-      window.location.href = '/pages/user-dashboard.html';
+      window.location.href = 'user-dashboard.html';
     }, 2000);
     return false;
   }
@@ -78,8 +78,8 @@ async function checkAuth() {
 
 // Logout handler
 function handleLogout() {
-  sessionStorage.clear();
-  window.location.href = '/pages/login.html';
+  localStorage.clear();
+  window.location.href = 'user-login.html';
 }
 
 // Show alert
@@ -99,7 +99,7 @@ function showAlert(message, type = 'info') {
 async function loadProducts() {
   try {
     const user = getUser();
-    const response = await fetch(`${API_BASE_URL}/products`, {
+    const response = await fetch(`${window.API_BASE_URL}/products`, {
       headers: getHeaders()
     });
 
@@ -136,7 +136,7 @@ async function loadProducts() {
 // Load suppliers
 async function loadSuppliers() {
   try {
-    const response = await fetch(`${API_BASE_URL}/suppliers/active`, {
+    const response = await fetch(`${window.API_BASE_URL}/suppliers/active`, {
       headers: getHeaders()
     });
 
@@ -177,7 +177,7 @@ async function loadRecentTransactions() {
   try {
     const user = getUser();
     const response = await fetch(
-      `${API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=in&limit=10`,
+      `${window.API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=in&limit=10`,
       { headers: getHeaders() }
     );
 
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Sending stock in data:', stockInData); // Debug log
 
     try {
-      const response = await fetch(`${API_BASE_URL}/transactions`, {
+      const response = await fetch(`${window.API_BASE_URL}/transactions`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(stockInData)

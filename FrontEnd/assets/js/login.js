@@ -234,15 +234,15 @@ loginForm.addEventListener('submit', handleLogin);
 
 // Check if already logged in
 window.addEventListener('DOMContentLoaded', () => {
-  const token = sessionStorage.getItem('token');
-  const userRole = sessionStorage.getItem('userRole');
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
   
   if (token && userRole) {
     // Redirect to appropriate page based on role
     if (userRole === 'admin') {
-      window.location.href = '/pages/admin.html';
+      window.location.href = 'admin.html';
     } else {
-      window.location.href = '/pages/user-dashboard.html';
+      window.location.href = 'user-dashboard.html';
     }
   }
 });

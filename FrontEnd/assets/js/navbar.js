@@ -91,11 +91,18 @@ function updateAdminName() {
 
 // Handle logout
 function handleLogout() {
+  // Get user role to determine which login page to redirect to
+  const userRole = localStorage.getItem('userRole');
+  
   // Clear all localStorage
   localStorage.clear();
   
-  // Redirect to login page
-  window.location.href = '/pages/login.html';
+  // Redirect to appropriate login page
+  if (userRole === 'admin') {
+    window.location.href = 'login.html';
+  } else {
+    window.location.href = 'user-login.html';
+  }
 }
 
 // Check authentication

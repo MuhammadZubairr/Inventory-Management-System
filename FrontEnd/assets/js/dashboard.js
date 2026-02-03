@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load dashboard statistics
 async function loadDashboardStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+    const response = await fetch(`${window.API_BASE_URL}/dashboard/stats`, {
       headers: getHeaders()
     });
 
@@ -215,7 +215,7 @@ async function loadRecentTransactions() {
   if (!transactionsContainer) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/transactions?limit=5&sort=-createdAt`, {
+    const response = await fetch(`${window.API_BASE_URL}/transactions?limit=5&sort=-createdAt`, {
       headers: getHeaders()
     });
 
@@ -298,7 +298,7 @@ async function loadLowStockAlerts() {
   if (!lowStockContainer) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/dashboard/alerts/low-stock`, {
+    const response = await fetch(`${window.API_BASE_URL}/dashboard/alerts/low-stock`, {
       headers: getHeaders()
     });
 
@@ -342,7 +342,7 @@ async function loadLowStockAlerts() {
       const progressClass = stockPercentage < 25 ? 'bg-danger' : (stockPercentage < 50 ? 'bg-warning' : 'bg-primary');
       
       return `
-        <a href="/pages/products.html" class="list-group-item list-group-item-action">
+        <a href="products.html" class="list-group-item list-group-item-action">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
               <h6 class="mb-1 fw-semibold">${product.name}</h6>
@@ -389,7 +389,7 @@ function showAlert(message, type = 'info') {
 // Load monthly transaction trends for chart
 async function loadMonthlyTrends() {
   try {
-    const response = await fetch(`${API_BASE_URL}/dashboard/trends/monthly`, {
+    const response = await fetch(`${window.API_BASE_URL}/dashboard/trends/monthly`, {
       headers: getHeaders()
     });
 
@@ -411,7 +411,7 @@ async function loadMonthlyTrends() {
 // Load trends by period (week, month, year)
 async function loadTrendsByPeriod(period) {
   try {
-    const response = await fetch(`${API_BASE_URL}/dashboard/trends/${period}ly`, {
+    const response = await fetch(`${window.API_BASE_URL}/dashboard/trends/${period}ly`, {
       headers: getHeaders()
     });
 
@@ -433,14 +433,14 @@ async function loadTrendsByPeriod(period) {
 // Logout handler
 async function handleLogout() {
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${window.API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: getHeaders()
     });
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    sessionStorage.clear();
-    window.location.href = '/pages/login.html';
+    localStorage.clear();
+    window.location.href = 'login.html';
   }
 }

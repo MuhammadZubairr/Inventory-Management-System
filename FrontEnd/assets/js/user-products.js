@@ -1,16 +1,16 @@
 // User Products JavaScript
-const API_BASE_URL = 'http://localhost:3001/api';
+// API_BASE_URL is set by config.js
 
-// Get session storage data
+// Get local storage data
 function getToken() {
-  return sessionStorage.getItem('token');
+  return localStorage.getItem('token');
 }
 
 function getUser() {
-  const userRole = sessionStorage.getItem('userRole');
-  const userName = sessionStorage.getItem('userName');
-  const warehouseId = sessionStorage.getItem('warehouseId');
-  const warehouseName = sessionStorage.getItem('warehouseName');
+  const userRole = localStorage.getItem('userRole');
+  const userName = localStorage.getItem('userName');
+  const warehouseId = localStorage.getItem('warehouseId');
+  const warehouseName = localStorage.getItem('warehouseName');
   
   if (userRole && userName) {
     return { role: userRole, name: userName, warehouseId, warehouseName };
@@ -31,33 +31,33 @@ async function checkAuth() {
   const token = getToken();
   
   if (!user || !token) {
-    window.location.href = '/pages/user-login.html';
+    window.location.href = 'user-login.html';
     return false;
   }
   
   // Validate token with backend
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: getHeaders()
     });
     
     if (!response.ok) {
       // Token invalid or expired
-      sessionStorage.clear();
-      window.location.href = '/pages/user-login.html';
+      localStorage.clear();
+      window.location.href = 'user-login.html';
       return false;
     }
   } catch (error) {
     console.error('Auth validation error:', error);
-    sessionStorage.clear();
-    window.location.href = '/pages/user-login.html';
+    localStorage.clear();
+    window.location.href = 'user-login.html';
     return false;
   }
   
   // Redirect admin to admin panel
   if (user.role === 'admin') {
-    window.location.href = '/pages/admin.html';
+    window.location.href = 'admin.html';
     return false;
   }
   
@@ -66,8 +66,8 @@ async function checkAuth() {
 
 // Logout handler
 function handleLogout() {
-  sessionStorage.clear();
-  window.location.href = '/pages/login.html';
+  localStorage.clear();
+  window.location.href = 'user-login.html';
 }
 
 // Show alert
@@ -95,7 +95,7 @@ async function loadProducts() {
       params.append('search', searchInput.value);
     }
     
-    const response = await fetch(`${API_BASE_URL}/user-dashboard/warehouse-products?${params.toString()}`, {
+    const response = await fetch(`${window.API_BASE_URL}/user-dashboard/warehouse-products?${params.toString()}`, {
       headers: getHeaders()
     });
 
@@ -176,7 +176,7 @@ async function loadProducts() {
 // View product details
 async function viewProductDetails(productId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+    const response = await fetch(`${window.API_BASE_URL}/products/${productId}`, {
       headers: getHeaders()
     });
 

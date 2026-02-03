@@ -3,10 +3,10 @@
 
 console.log('📊 [Reports] Script loaded');
 
-// API Headers with token (using sessionStorage directly to avoid conflicts)
+// API Headers with token (using localStorage)
 const getReportHeaders = () => ({
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+  'Authorization': `Bearer ${localStorage.getItem('token')}`
 });
 
 // Current report configuration

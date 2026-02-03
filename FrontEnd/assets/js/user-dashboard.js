@@ -1,13 +1,13 @@
 // User Dashboard JavaScript
-const API_BASE_URL = 'http://localhost:3001/api';
+// API_BASE_URL is set by config.js
 
-// Get token and user data from sessionStorage
-const getToken = () => sessionStorage.getItem('token');
-const getUserId = () => sessionStorage.getItem('userId');
-const getUserName = () => sessionStorage.getItem('userName');
-const getWarehouseId = () => sessionStorage.getItem('warehouseId');
-const getWarehouseName = () => sessionStorage.getItem('warehouseName');
-const getUserRole = () => sessionStorage.getItem('userRole');
+// Get token and user data from localStorage
+const getToken = () => localStorage.getItem('token');
+const getUserId = () => localStorage.getItem('userId');
+const getUserName = () => localStorage.getItem('userName');
+const getWarehouseId = () => localStorage.getItem('warehouseId');
+const getWarehouseName = () => localStorage.getItem('warehouseName');
+const getUserRole = () => localStorage.getItem('userRole');
 
 // Check authentication
 async function checkAuth() {
@@ -15,7 +15,7 @@ async function checkAuth() {
   const userRole = getUserRole();
   
   if (!token) {
-    window.location.href = '/pages/user-login.html';
+    window.location.href = 'user-login.html';
     return false;
   }
   
@@ -24,7 +24,7 @@ async function checkAuth() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: getHeaders(),
       signal: controller.signal
@@ -34,8 +34,8 @@ async function checkAuth() {
     
     if (!response.ok) {
       // Token invalid or expired
-      sessionStorage.clear();
-      window.location.href = '/pages/user-login.html';
+      localStorage.clear();
+      window.location.href = 'user-login.html';
       return false;
     }
   } catch (error) {
@@ -51,14 +51,14 @@ async function checkAuth() {
     // This includes: server down, server restart, connection refused, etc.
     console.error('Auth validation error:', error.message || error);
     console.log('🚪 Logging out and redirecting to login...');
-    sessionStorage.clear();
-    window.location.href = '/pages/user-login.html';
+    localStorage.clear();
+    window.location.href = 'user-login.html';
     return false;
   }
   
   // Redirect admins to admin dashboard
   if (userRole === 'admin') {
-    window.location.href = '/pages/admin.html';
+    window.location.href = 'admin.html';
     return false;
   }
   
@@ -97,7 +97,7 @@ async function silentUserTokenCheck() {
   }
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+    const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
       headers: getHeaders()
     });
@@ -110,8 +110,8 @@ async function silentUserTokenCheck() {
         clearInterval(userHeartbeatInterval);
       }
       
-      sessionStorage.clear();
-      window.location.href = '/pages/user-login.html';
+      localStorage.clear();
+      window.location.href = 'user-login.html';
     } else {
       console.log('✅ User heartbeat: Token still valid');
     }
@@ -121,7 +121,7 @@ async function silentUserTokenCheck() {
     // Retry once after 2 seconds
     setTimeout(async () => {
       try {
-        const retryResponse = await fetch(`${API_BASE_URL}/auth/validate`, {
+        const retryResponse = await fetch(`${window.API_BASE_URL}/auth/validate`, {
           method: 'GET',
           headers: getHeaders()
         });
@@ -129,14 +129,14 @@ async function silentUserTokenCheck() {
         if (!retryResponse.ok) {
           console.error('🚨 User token invalid after server restart');
           if (userHeartbeatInterval) clearInterval(userHeartbeatInterval);
-          sessionStorage.clear();
-          window.location.href = '/pages/user-login.html';
+          localStorage.clear();
+          window.location.href = 'user-login.html';
         }
       } catch (retryError) {
         console.error('🚨 Server unreachable - logging out user');
         if (userHeartbeatInterval) clearInterval(userHeartbeatInterval);
-        sessionStorage.clear();
-        window.location.href = '/pages/user-login.html';
+        localStorage.clear();
+        window.location.href = 'user-login.html';
       }
     }, 2000);
   }
@@ -191,14 +191,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load dashboard statistics
 async function loadDashboardStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/user-dashboard/stats`, {
+    const response = await fetch(`${window.API_BASE_URL}/user-dashboard/stats`, {
       headers: getHeaders()
     });
 
     if (!response.ok) {
       if (response.status === 401) {
-        sessionStorage.clear();
-        window.location.href = '/pages/login.html';
+        localStorage.clear();
+        window.location.href = 'user-login.html';
         return;
       }
       throw new Error('Failed to load dashboard stats');
@@ -301,8 +301,8 @@ function viewWarehouseProducts() {
 // Logout function
 function handleLogout() {
   if (confirm('Are you sure you want to logout?')) {
-    sessionStorage.clear();
-    window.location.href = '/pages/login.html';
+    localStorage.clear();
+    window.location.href = 'user-login.html';
   }
 }
 
