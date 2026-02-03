@@ -92,7 +92,7 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
 
     // Redirect to user dashboard
     setTimeout(() => {
-      window.location.href = 'user-dashboard.html';
+      window.location.href = '/pages/user-dashboard.html';
     }, 1000);
 
   } catch (error) {

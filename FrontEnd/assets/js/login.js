@@ -188,13 +188,13 @@ async function handleLogin(event) {
     setTimeout(() => {
       if (user.role === 'admin') {
         // Admin users go to admin dashboard
-        window.location.href = 'admin.html';
+        window.location.href = '/pages/admin.html';
       } else {
         // Operational users (staff, manager, viewer) go to user dashboard
         if (!user.warehouse) {
           throw new Error('No warehouse assigned. Please contact administrator.');
         }
-        window.location.href = 'user-dashboard.html';
+        window.location.href = '/pages/user-dashboard.html';
       }
     }, 1000);
 
