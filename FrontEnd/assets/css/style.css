@@ -95,14 +95,14 @@ aside .btn-outline-secondary:hover{
 }
 .navbar .navbar-brand,
 .navbar .nav-link,
-.navbar .btn,
+/* .navbar .btn, */
 .navbar .small,
 .navbar p{
   color: #d3d3d3 !important;
 }
 .navbar .nav-link:hover,
 .navbar .nav-link:focus,
-.navbar .btn:hover,
+/* .navbar .btn:hover, */
 .navbar a:hover{
   color: #ffffff !important;
 }
