@@ -1,12 +1,20 @@
 // Warehouse List Page JavaScript
 console.log('🔵 [Warehouse List] JavaScript file is loading...');
 
-// API_BASE_URL is already declared in navbar.js
-console.log('🚀 [Warehouse List] Script loaded! API URL:', API_BASE_URL);
+// Get API_BASE_URL from window object
+console.log('🚀 [Warehouse List] Script loaded! API URL:', window.API_BASE_URL);
 
 // Load warehouses on page load
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('📄 [Warehouse List] DOM Content Loaded event fired');
+    
+    // Check authentication first
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) {
+        console.log('❌ [Warehouse List] Not authenticated, redirecting to login');
+        return;
+    }
+    
     console.log('📄 [Warehouse List] About to call loadWarehouses()');
     try {
         await loadWarehouses();
@@ -23,15 +31,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadWarehouses() {
     try {
         console.log('🏢 [Warehouse List] Starting to load warehouses...');
-        const token = sessionStorage.getItem('token');
+        const token = localStorage.getItem('token');
         if (!token) {
             console.log('❌ [Warehouse List] No token found, redirecting to login');
-            window.location.href = '/pages/login.html';
+            window.location.href = 'login.html';
             return;
         }
 
-        console.log('📡 [Warehouse List] Fetching from:', `${API_BASE_URL}/warehouses`);
-        const response = await fetch(`${API_BASE_URL}/warehouses`, {
+        console.log('📡 [Warehouse List] Fetching from:', `${window.API_BASE_URL}/warehouses`);
+        const response = await fetch(`${window.API_BASE_URL}/warehouses`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -42,8 +50,8 @@ async function loadWarehouses() {
 
         if (response.status === 401) {
             console.log('❌ [Warehouse List] Unauthorized, redirecting to login');
-            sessionStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
             return;
         }
 
@@ -144,7 +152,7 @@ function displayWarehouses(warehouses) {
 // View products in a warehouse
 function viewWarehouseProducts(warehouseId, warehouseName) {
     // Navigate to warehouse products page
-    window.location.href = `/pages/warehouse-products.html?id=${warehouseId}&name=${encodeURIComponent(warehouseName)}`;
+    window.location.href = `warehouse-products.html?id=${warehouseId}&name=${encodeURIComponent(warehouseName)}`;
 }
 
 // Setup search functionality
