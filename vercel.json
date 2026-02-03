@@ -1,27 +1,5 @@
 {
-  "version": 2,
-  "buildCommand": "echo 'No build needed'",
-  "outputDirectory": "FrontEnd",
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/components/(.*)",
-      "dest": "/components/$1"
-    },
-    {
-      "src": "/pages/(.*)",
-      "dest": "/pages/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/pages/login.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/pages/$1"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/FrontEnd/pages/$1" }
   ]
 }
