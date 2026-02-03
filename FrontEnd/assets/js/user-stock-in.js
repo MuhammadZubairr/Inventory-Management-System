@@ -226,21 +226,32 @@ async function loadSuppliers() {
 async function loadRecentTransactions() {
   try {
     const user = getUser();
+    console.log('📊 [Stock-In] Loading recent transactions for warehouse:', user.warehouseId);
+    
     const response = await fetch(
-      `${window.API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=in&limit=10`,
+      `${window.API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=stock_in&limit=10`,
       { headers: getHeaders() }
     );
 
-    if (!response.ok) throw new Error('Failed to load transactions');
+    console.log('📊 [Stock-In] Transactions response status:', response.status);
+
+    if (!response.ok) {
+      console.error('❌ [Stock-In] Failed to load transactions');
+      throw new Error('Failed to load transactions');
+    }
 
     const data = await response.json();
+    console.log('📊 [Stock-In] Transactions data:', data);
+    
     const tbody = document.getElementById('recentTransactions');
     
-    if (data.data.transactions.length === 0) {
+    if (!data.data || !data.data.transactions || data.data.transactions.length === 0) {
+      console.log('ℹ️ [Stock-In] No transactions found');
       tbody.innerHTML = '<tr><td colspan="6" class="text-center">No recent transactions</td></tr>';
       return;
     }
 
+    console.log('✅ [Stock-In] Found', data.data.transactions.length, 'transactions');
     tbody.innerHTML = data.data.transactions.map(t => `
       <tr>
         <td>${new Date(t.transactionDate).toLocaleDateString()}</td>
@@ -252,7 +263,7 @@ async function loadRecentTransactions() {
       </tr>
     `).join('');
   } catch (error) {
-    console.error('Error loading transactions:', error);
+    console.error('💥 [Stock-In] Error loading transactions:', error);
   }
 }
 
@@ -405,7 +416,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       stockInData.supplier = supplierValue;
     }
 
-    console.log('Sending stock in data:', stockInData); // Debug log
+    console.log('📤 [Stock-In] Form data collected:', {
+      product: formData.get('product'),
+      warehouse: user.warehouseId,
+      quantity: formData.get('quantity'),
+      unitPrice: formData.get('unitPrice'),
+      supplier: supplierValue,
+      notes: formData.get('notes')
+    });
+    console.log('📤 [Stock-In] Sending stock in data:', stockInData);
 
     try {
       const response = await fetch(`${window.API_BASE_URL}/transactions`, {
@@ -414,9 +433,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify(stockInData)
       });
 
+      console.log('📥 [Stock-In] Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Error response:', errorData); // Debug log
+        console.error('❌ [Stock-In] Error response:', errorData);
+        console.error('❌ [Stock-In] Validation details:', errorData.errors || errorData.details);
         throw new Error(errorData.message || 'Failed to add stock');
       }
 
