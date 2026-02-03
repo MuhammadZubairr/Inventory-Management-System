@@ -133,21 +133,29 @@ async function loadProducts() {
 async function loadRecentTransactions() {
   try {
     const user = getUser();
+    console.log('📊 [Stock-Out] Loading recent transactions for warehouse:', user.warehouseId);
+    
     const response = await fetch(
-      `${window.API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=out&limit=10`,
+      `${window.API_BASE_URL}/transactions?warehouse=${user.warehouseId}&type=stock_out&limit=10`,
       { headers: getHeaders() }
     );
+
+    console.log('📊 [Stock-Out] Transactions response status:', response.status);
 
     if (!response.ok) throw new Error('Failed to load transactions');
 
     const data = await response.json();
+    console.log('📊 [Stock-Out] Transactions data:', data);
+    
     const tbody = document.getElementById('recentTransactions');
     
-    if (data.data.transactions.length === 0) {
+    if (!data.data || !data.data.transactions || data.data.transactions.length === 0) {
+      console.log('📊 [Stock-Out] No transactions found');
       tbody.innerHTML = '<tr><td colspan="6" class="text-center">No recent transactions</td></tr>';
       return;
     }
 
+    console.log('📊 [Stock-Out] Loaded', data.data.transactions.length, 'transactions');
     tbody.innerHTML = data.data.transactions.map(t => `
       <tr>
         <td>${new Date(t.transactionDate).toLocaleDateString()}</td>
@@ -159,7 +167,7 @@ async function loadRecentTransactions() {
       </tr>
     `).join('');
   } catch (error) {
-    console.error('Error loading transactions:', error);
+    console.error('❌ [Stock-Out] Error loading transactions:', error);
   }
 }
 
