@@ -108,11 +108,18 @@ function handleLogout() {
 // Check authentication
 async function checkAuth() {
   const token = getToken();
+  const userRole = localStorage.getItem('userRole');
   console.log('🔐 [navbar.js] Checking authentication...');
+  console.log('🔐 [navbar.js] User role:', userRole);
   
   if (!token) {
     console.warn('⚠️ [navbar.js] No token found, redirecting to login');
-    window.location.href = '/pages/login.html';
+    // Redirect based on user role
+    if (userRole === 'admin') {
+      window.location.href = 'login.html';
+    } else {
+      window.location.href = 'user-login.html';
+    }
     return false;
   }
   
@@ -138,7 +145,12 @@ async function checkAuth() {
       // Token invalid or expired (401, 403, etc.)
       console.error('❌ [navbar.js] Token validation failed. Logging out...');
       localStorage.clear();
-      window.location.href = '/pages/login.html';
+      // Redirect based on user role
+      if (userRole === 'admin') {
+        window.location.href = 'login.html';
+      } else {
+        window.location.href = 'user-login.html';
+      }
       return false;
     }
     
@@ -158,7 +170,12 @@ async function checkAuth() {
     console.error('❌ [navbar.js] Auth validation error:', error.message || error);
     console.log('🚪 [navbar.js] Logging out and redirecting to login...');
     localStorage.clear();
-    window.location.href = '/pages/login.html';
+    // Redirect based on user role
+    if (userRole === 'admin') {
+      window.location.href = 'login.html';
+    } else {
+      window.location.href = 'user-login.html';
+    }
     return false;
   }
 }

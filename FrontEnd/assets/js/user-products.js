@@ -34,10 +34,16 @@ async function checkProductsAuth() {
   
   // Validate token with backend
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     const response = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       method: 'GET',
-      headers: getHeaders()
+      headers: getHeaders(),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       // Token invalid or expired
@@ -46,6 +52,13 @@ async function checkProductsAuth() {
       return false;
     }
   } catch (error) {
+    // Only ignore AbortError (from timeout during rapid refresh)
+    if (error.name === 'AbortError') {
+      console.warn('⚠️ Products auth request timeout - page might be refreshing');
+      return true; // Allow page to continue
+    }
+    
+    // For all other errors, log out
     console.error('Auth validation error:', error);
     localStorage.clear();
     window.location.href = 'user-login.html';
