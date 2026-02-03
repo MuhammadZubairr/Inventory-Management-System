@@ -21,14 +21,16 @@ export const authenticate = asyncHandler(async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
+    // Note: Server instance check disabled to allow tokens to persist across restarts
+    // If you need this security feature, implement a token blacklist instead
     // Check if token was issued by current server instance
-    if (decoded.sid !== global.SERVER_INSTANCE_ID) {
-      logger.warn('Token from previous server instance detected', {
-        tokenSid: decoded.sid,
-        currentSid: global.SERVER_INSTANCE_ID
-      });
-      throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Session expired. Please login again.');
-    }
+    // if (decoded.sid !== global.SERVER_INSTANCE_ID) {
+    //   logger.warn('Token from previous server instance detected', {
+    //     tokenSid: decoded.sid,
+    //     currentSid: global.SERVER_INSTANCE_ID
+    //   });
+    //   throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Session expired. Please login again.');
+    // }
     
     // Attach user info to request
     req.user = {
