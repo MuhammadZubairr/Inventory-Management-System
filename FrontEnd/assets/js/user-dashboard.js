@@ -227,6 +227,23 @@ async function loadDashboardStats() {
     
     if (data.success && data.data) {
       console.log('✅ [User Dashboard] Updating dashboard with data:', data.data);
+      
+      // Save user and warehouse data to localStorage if available
+      if (data.data.user) {
+        console.log('💾 [User Dashboard] Saving user data to localStorage');
+        localStorage.setItem('userId', data.data.user._id);
+        localStorage.setItem('userName', data.data.user.name);
+        localStorage.setItem('userEmail', data.data.user.email);
+        localStorage.setItem('userRole', data.data.user.role);
+      }
+      
+      if (data.data.warehouse) {
+        console.log('💾 [User Dashboard] Saving warehouse data to localStorage');
+        localStorage.setItem('warehouseId', data.data.warehouse._id);
+        localStorage.setItem('warehouseName', data.data.warehouse.name);
+        localStorage.setItem('warehouseCode', data.data.warehouse.code || '');
+      }
+      
       updateDashboardStats(data.data);
     } else {
       console.error('⚠️ [User Dashboard] Invalid data structure:', data);
