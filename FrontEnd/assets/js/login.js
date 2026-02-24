@@ -240,9 +240,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if (token && userRole) {
     // Redirect to appropriate page based on role
     if (userRole === 'admin') {
-      window.location.href = 'admin.html';
+      window.location.href = '/pages/admin.html';
     } else {
-      window.location.href = 'user-dashboard.html';
+      window.location.href = '/pages/user-dashboard.html';
     }
   }
 });

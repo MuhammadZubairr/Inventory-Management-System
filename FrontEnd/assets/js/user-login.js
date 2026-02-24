@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const userRole = localStorage.getItem('userRole');
   
   if (token && userRole && userRole !== 'admin') {
-    window.location.href = 'user-dashboard.html';
+    window.location.href = '/pages/user-dashboard.html';
   }
 });
 
@@ -55,7 +55,7 @@ document.getElementById('userLoginForm').addEventListener('submit', async (e) =>
     if (user.role === 'admin') {
       showAlert('Admin users should use the admin login page.', 'warning');
       setTimeout(() => {
-        window.location.href = 'login.html';
+        window.location.href = '/pages/login.html';
       }, 2000);
       return;
     }
