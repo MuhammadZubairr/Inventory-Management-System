@@ -169,8 +169,8 @@ function displayProducts(products) {
                         ${quantity.toLocaleString()}
                     </span>
                 </td>
-                <td>$${unitPrice.toFixed(2)}</td>
-                <td class="fw-semibold">$${totalValue.toFixed(2)}</td>
+                <td>Rs ${unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="fw-semibold">Rs ${totalValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td>${statusBadge}</td>
             </tr>
         `;

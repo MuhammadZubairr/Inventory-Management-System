@@ -237,9 +237,9 @@ function displayInventoryReport(reportData) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Total Value</h6>
-                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">$${(summary.totalValue || 0).toFixed(2)}</h3>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">Rs ${(summary.totalValue || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
               </div>
-              <i class="bi bi-currency-dollar fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
+              <i class="bi bi-currency-exchange fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@ function displayInventoryReport(reportData) {
             <div class="d-flex align-items-center justify-content-between">
               <div>
                 <h6 class="card-subtitle mb-2" style="color: #ffffff !important; opacity: 0.85;">Avg Price</h6>
-                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">$${(summary.averagePrice || 0).toFixed(2)}</h3>
+                <h3 class="card-title mb-0" style="color: #ffffff !important; font-weight: 700;">Rs ${(summary.averagePrice || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
               </div>
               <i class="bi bi-graph-up fs-1" style="color: #ffffff !important; opacity: 0.5;"></i>
             </div>
@@ -320,8 +320,8 @@ function displayInventoryReport(reportData) {
                       </span>
                     </td>
                     <td class="text-end">${minStock}</td>
-                    <td class="text-end">$${unitPrice.toFixed(2)}</td>
-                    <td class="text-end fw-semibold">$${totalValue.toFixed(2)}</td>
+                    <td class="text-end">Rs ${unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td class="text-end fw-semibold">Rs ${totalValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td>${statusBadge}</td>
                     <td>${product.supplier?.name || '-'}</td>
                   </tr>

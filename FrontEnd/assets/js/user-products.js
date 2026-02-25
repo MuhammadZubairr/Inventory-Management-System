@@ -167,7 +167,7 @@ async function loadProducts() {
           <td>${product.category}</td>
           <td><span class="badge ${stockBadge}">${currentStock}</span></td>
           <td>${minStock}</td>
-          <td>$${product.unitPrice?.toFixed(2) || '0.00'}</td>
+          <td>Rs ${product.unitPrice ? product.unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
           <td><span class="badge ${stockBadge}">${stockStatus}</span></td>
           <td>
             <button class="btn btn-sm btn-info" onclick="viewProductDetails('${product._id}')">

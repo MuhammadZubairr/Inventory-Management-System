@@ -132,7 +132,7 @@ function displayProducts(products) {
       <td>${product.name}</td>
       <td>${product.category}</td>
       <td>${product.quantity}</td>
-      <td>$${product.unitPrice ? product.unitPrice.toFixed(2) : '0.00'}</td>
+      <td>Rs ${product.unitPrice ? product.unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
       <td>
         <span class="badge ${product.status === 'available' ? 'bg-success' : 'bg-secondary'}">
           ${product.status}
