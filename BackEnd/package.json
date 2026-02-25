@@ -10,6 +10,7 @@
     "seed": "node seed.js",
     "manage-admin": "node manage-admin.js",
     "setup-admin": "node setup-single-admin.js",
+    "clear-db": "node clear-db.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
