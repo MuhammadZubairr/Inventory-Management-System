@@ -117,3 +117,22 @@ export const updateProfile = asyncHandler(async (req, res) => {
     new ApiResponse(HTTP_STATUS.OK, { user }, 'Profile updated successfully')
   );
 });
+
+/**
+ * @route   PUT /api/users/update-currency
+ * @desc    Update user's preferred currency
+ * @access  Private
+ */
+export const updateCurrency = asyncHandler(async (req, res) => {
+  const { currency } = req.body;
+  
+  if (!currency || !['PKR', 'USD'].includes(currency)) {
+    throw new ApiError(HTTP_STATUS.BAD_REQUEST, 'Invalid currency. Must be PKR or USD');
+  }
+
+  const user = await userService.updateProfile(req.user.id, { currency });
+
+  res.status(HTTP_STATUS.OK).json(
+    new ApiResponse(HTTP_STATUS.OK, { user }, 'Currency updated successfully')
+  );
+});

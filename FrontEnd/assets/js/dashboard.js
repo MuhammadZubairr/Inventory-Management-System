@@ -8,8 +8,13 @@ const getHeaders = () => ({
   'Authorization': `Bearer ${getToken()}`
 });
 
-// Format currency in PKR (Pakistani Rupees)
+// Format currency - uses global utility if available
 const formatCurrency = (amount) => {
+  // Use global formatPrice from currency.js if available
+  if (typeof window.formatPrice === 'function') {
+    return window.formatPrice(amount);
+  }
+  // Fallback to PKR
   return 'Rs ' + new Intl.NumberFormat('en-PK', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2

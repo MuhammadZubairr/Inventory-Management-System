@@ -74,6 +74,11 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
     }],
+    currency: {
+      type: String,
+      enum: ['PKR', 'USD'],
+      default: 'PKR',
+    },
     lastLogin: {
       type: Date,
     },

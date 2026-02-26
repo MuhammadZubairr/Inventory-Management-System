@@ -7,6 +7,7 @@ import {
   deleteUser,
   changePassword,
   updateProfile,
+  updateCurrency,
 } from '../controllers/userController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
@@ -46,6 +47,15 @@ router.post(
   authenticate,
   validate(changePasswordSchema),
   changePassword
+);
+
+// @route   PUT /api/users/update-currency
+// @desc    Update user's preferred currency
+// @access  Private
+router.put(
+  '/update-currency',
+  authenticate,
+  updateCurrency
 );
 
 // @route   GET /api/users

@@ -42,6 +42,9 @@
 
         <!-- Right side: Notifications, User -->
         <div class="d-flex align-items-center gap-3">
+          <!-- Currency Selector -->
+          <div class="currency-selector-container"></div>
+          
           <!-- Notifications -->
           <!-- <div class="dropdown">
             <button class="btn btn-link text-dark position-relative p-2" type="button" data-bs-toggle="dropdown">
@@ -353,12 +356,23 @@
     <!-- <script src="/assets/js/dashboard.js"></script> -->
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Currency utility -->
+    <script src="../assets/js/currency.js"></script>
     <!-- Navbar functionality (admin name display) -->
     <script src="../assets/js/navbar.js"></script>
     <!-- Sidebar auto-scroll -->
     <script src="../assets/js/sidebar-scroll.js"></script>
     <!-- User management -->
     <script src="../assets/js/manage-users.js"></script>
+    
+    <!-- Initialize currency selector -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initCurrencySelector === 'function') {
+          initCurrencySelector();
+        }
+      });
+    </script>
 
     <!-- Load Sidebar Component -->
     <script>

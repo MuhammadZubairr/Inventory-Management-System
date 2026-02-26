@@ -533,3 +533,164 @@ function hideSearchResults() {
     resultsContainer.style.display = 'none';
   }
 }
+// Initialize currency selector
+function initCurrencySelector() {
+  // Find currency dropdown containers
+  const currencyContainers = document.querySelectorAll('.currency-selector-container');
+  
+  currencyContainers.forEach(container => {
+    const currentCurrency = getUserCurrency();
+    const icon = currentCurrency === 'USD' ? '$' : 'Rs';
+    
+    // Get exchange rate info if available
+    let exchangeRateInfo = '';
+    if (typeof window.getExchangeRateInfo === 'function') {
+      const info = window.getExchangeRateInfo();
+      const lastUpdate = typeof window.getLastUpdateTime === 'function' ? window.getLastUpdateTime() : 'Unknown';
+      exchangeRateInfo = `
+        <li><hr class="dropdown-divider"></li>
+        <li class="px-3 py-2">
+          <div class="small text-muted">
+            <div class="d-flex justify-content-between">
+              <span>Exchange Rate:</span>
+              <span class="fw-semibold">1 USD = ${info.usdToPkr.toFixed(2)} PKR</span>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <span>Last Updated:</span>
+              <span>${lastUpdate}</span>
+            </div>
+            <button class="btn btn-link btn-sm p-0 mt-1 refresh-rate-btn" style="font-size: 0.75rem;">
+              <i class="bi bi-arrow-clockwise"></i> Refresh Rate
+            </button>
+          </div>
+        </li>
+      `;
+    }
+    
+    // Create currency selector HTML
+    container.innerHTML = `
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1" 
+                type="button" 
+                id="currencyDropdown" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+          <i class="bi ${currentCurrency === 'USD' ? 'bi-currency-dollar' : 'bi-cash'}"></i>
+          <span class="currency-label">${currentCurrency}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="currencyDropdown" style="min-width: 280px;">
+          <li><h6 class="dropdown-header">Select Currency</h6></li>
+          <li>
+            <a class="dropdown-item currency-option ${currentCurrency === 'PKR' ? 'active' : ''}" 
+               href="#" 
+               data-currency="PKR">
+              <i class="bi bi-cash me-2"></i>PKR - Pakistani Rupee
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item currency-option ${currentCurrency === 'USD' ? 'active' : ''}" 
+               href="#" 
+               data-currency="USD">
+              <i class="bi bi-currency-dollar me-2"></i>USD - US Dollar
+            </a>
+          </li>
+          ${exchangeRateInfo}
+        </ul>
+      </div>
+    `;
+    
+    // Add event listeners for currency options
+    container.querySelectorAll('.currency-option').forEach(option => {
+      option.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const newCurrency = e.currentTarget.dataset.currency;
+        await handleCurrencyChange(newCurrency);
+      });
+    });
+    
+    // Add event listener for refresh button
+    const refreshBtn = container.querySelector('.refresh-rate-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Show loading state
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise spinner-border spinner-border-sm"></i> Updating...';
+        refreshBtn.disabled = true;
+        
+        // Refresh rate
+        if (typeof window.refreshExchangeRate === 'function') {
+          await window.refreshExchangeRate();
+        }
+        
+        // Reinitialize to show new rate
+        setTimeout(() => {
+          initCurrencySelector();
+        }, 500);
+      });
+    }
+  });
+}
+
+// Handle currency change
+async function handleCurrencyChange(newCurrency) {
+  try {
+    // Update localStorage
+    setUserCurrency(newCurrency);
+    
+    // Update backend
+    const token = getToken();
+    if (token) {
+      const response = await fetch(`${window.API_BASE_URL}/users/update-currency`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currency: newCurrency })
+      });
+      
+      if (response.ok) {
+        console.log('Currency updated successfully');
+      }
+    }
+    
+    // Update UI
+    updateCurrencyDisplay(newCurrency);
+    
+    // Reload page to apply currency changes
+    window.location.reload();
+    
+  } catch (error) {
+    console.error('Error updating currency:', error);
+  }
+}
+
+// Update currency display in selector
+function updateCurrencyDisplay(currency) {
+  const labels = document.querySelectorAll('.currency-label');
+  const icons = document.querySelectorAll('#currencyDropdown i');
+  
+  labels.forEach(label => {
+    label.textContent = currency;
+  });
+  
+  icons.forEach(icon => {
+    icon.className = currency === 'USD' ? 'bi bi-currency-dollar' : 'bi bi-cash';
+  });
+  
+  // Update active state
+  document.querySelectorAll('.currency-option').forEach(option => {
+    if (option.dataset.currency === currency) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
+  });
+}
+
+// Make functions globally accessible
+window.initCurrencySelector = initCurrencySelector;
+window.handleCurrencyChange = handleCurrencyChange;
+window.updateCurrencyDisplay = updateCurrencyDisplay;
