@@ -282,7 +282,7 @@ function updateDashboardStats(data) {
   if (totalProductsEl) totalProductsEl.textContent = stats.totalProducts || 0;
   if (lowStockCountEl) lowStockCountEl.textContent = stats.lowStockCount || 0;
   if (totalQuantityEl) totalQuantityEl.textContent = stats.totalQuantity || 0;
-  if (totalValueEl) totalValueEl.textContent = `Rs ${(stats.totalValue || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;  
+  if (totalValueEl) totalValueEl.textContent = typeof window.formatPrice === 'function' ? window.formatPrice(stats.totalValue || 0) : `Rs ${(stats.totalValue || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;  
 
   console.log('✅ [User Dashboard] Stats updated');
 

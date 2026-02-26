@@ -89,6 +89,9 @@
             </ul>
           </div> -->
 
+          <!-- Currency Selector -->
+          <div class="currency-selector-container"></div>
+
           <!-- User Profile -->
           <div class="dropdown">
             <button class="btn btn-link text-dark p-0 d-flex align-items-center text-decoration-none" type="button" data-bs-toggle="dropdown">
@@ -216,12 +219,23 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Select2 JS for searchable dropdown -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Currency utility -->
+    <script src="../assets/js/currency.js"></script>
     <!-- Navbar functionality (admin name display) -->
     <script src="../assets/js/navbar.js"></script>
     <!-- Sidebar auto-scroll -->
     <script src="../assets/js/sidebar-scroll.js"></script>
     <!-- Stock-In management -->
     <script src="../assets/js/stock-in.js"></script>
+    
+    <!-- Initialize currency selector -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initCurrencySelector === 'function') {
+          initCurrencySelector();
+        }
+      });
+    </script>
 
     <script>
       fetch('../components/sidebar.html').then(r => r.text()).then(html => {

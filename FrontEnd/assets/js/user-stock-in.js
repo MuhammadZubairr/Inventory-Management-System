@@ -257,8 +257,8 @@ async function loadRecentTransactions() {
         <td>${new Date(t.transactionDate).toLocaleDateString()}</td>
         <td>${t.product?.name || 'N/A'}</td>
         <td>${t.quantity}</td>
-        <td>$${t.unitPrice.toFixed(2)}</td>
-        <td>$${(t.quantity * t.unitPrice).toFixed(2)}</td>
+        <td>${typeof window.formatPrice === 'function' ? window.formatPrice(t.unitPrice || 0) : `$${t.unitPrice.toFixed(2)}`}</td>
+        <td>${typeof window.formatPrice === 'function' ? window.formatPrice((t.quantity * t.unitPrice) || 0) : `$${(t.quantity * t.unitPrice).toFixed(2)}`}</td>
         <td>${t.supplier?.name || 'N/A'}</td>
       </tr>
     `).join('');

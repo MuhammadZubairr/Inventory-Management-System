@@ -87,6 +87,9 @@
 
         <!-- Right side: User Profile -->
         <div class="d-flex align-items-center gap-3">
+          <!-- Currency Selector -->
+          <div class="currency-selector-container"></div>
+          
           <div class="dropdown">
             <button class="btn btn-link text-dark p-0 d-flex align-items-center text-decoration-none" type="button" data-bs-toggle="dropdown">
               <div class="me-2 text-end d-none d-md-block">
@@ -242,11 +245,19 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/admin-auth.js"></script>
+    <script src="../assets/js/currency.js"></script>
     <script src="../assets/js/navbar.js"></script>
     <script src="../assets/js/sidebar-scroll.js"></script>
     <script src="../assets/js/settings.js"></script>
 
     <script>
+      // Initialize currency selector
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initCurrencySelector === 'function') {
+          initCurrencySelector();
+        }
+      });
+      
       // Ensure navbar is updated with user data after all scripts load
       document.addEventListener('DOMContentLoaded', function() {
         console.log('Settings page loaded, checking user data...');

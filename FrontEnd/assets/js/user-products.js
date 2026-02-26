@@ -167,7 +167,7 @@ async function loadProducts() {
           <td>${product.category}</td>
           <td><span class="badge ${stockBadge}">${currentStock}</span></td>
           <td>${minStock}</td>
-          <td>Rs ${product.unitPrice ? product.unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
+          <td>${typeof window.formatPrice === 'function' ? window.formatPrice(product.unitPrice || 0) : `Rs ${product.unitPrice ? product.unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}`}</td>
           <td><span class="badge ${stockBadge}">${stockStatus}</span></td>
           <td>
             <button class="btn btn-sm btn-info" onclick="viewProductDetails('${product._id}')">
@@ -216,7 +216,7 @@ async function viewProductDetails(productId) {
           <table class="table table-sm">
             <tr><th>Current Stock:</th><td><span class="badge bg-info">${currentStock}</span></td></tr>
             <tr><th>Min Stock Level:</th><td>${product.minStockLevel}</td></tr>
-            <tr><th>Unit Price:</th><td>$${product.unitPrice?.toFixed(2) || '0.00'}</td></tr>
+            <tr><th>Unit Price:</th><td>${typeof window.formatPrice === 'function' ? window.formatPrice(product.unitPrice || 0) : `$${product.unitPrice?.toFixed(2) || '0.00'}`}</td></tr>
             <tr><th>Warehouse:</th><td>${user.warehouseName}</td></tr>
           </table>
         </div>

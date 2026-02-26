@@ -169,8 +169,8 @@ function displayProducts(products) {
                         ${quantity.toLocaleString()}
                     </span>
                 </td>
-                <td>Rs ${unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td class="fw-semibold">Rs ${totalValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>${typeof window.formatPrice === 'function' ? window.formatPrice(unitPrice) : `Rs ${unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                <td class="fw-semibold">${typeof window.formatPrice === 'function' ? window.formatPrice(totalValue) : `Rs ${totalValue.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
                 <td>${statusBadge}</td>
             </tr>
         `;
