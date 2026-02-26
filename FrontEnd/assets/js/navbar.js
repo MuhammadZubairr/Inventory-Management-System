@@ -581,18 +581,18 @@ function initCurrencySelector() {
         <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="currencyDropdown" style="min-width: 280px;">
           <li><h6 class="dropdown-header">Select Currency</h6></li>
           <li>
-            <a class="dropdown-item currency-option ${currentCurrency === 'PKR' ? 'active' : ''}" 
-               href="#" 
+            <button class="dropdown-item currency-option ${currentCurrency === 'PKR' ? 'active' : ''}" 
+               type="button"
                data-currency="PKR">
               <i class="bi bi-cash me-2"></i>PKR - Pakistani Rupee
-            </a>
+            </button>
           </li>
           <li>
-            <a class="dropdown-item currency-option ${currentCurrency === 'USD' ? 'active' : ''}" 
-               href="#" 
+            <button class="dropdown-item currency-option ${currentCurrency === 'USD' ? 'active' : ''}" 
+               type="button"
                data-currency="USD">
               <i class="bi bi-currency-dollar me-2"></i>USD - US Dollar
-            </a>
+            </button>
           </li>
           ${exchangeRateInfo}
         </ul>
