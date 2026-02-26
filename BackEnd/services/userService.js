@@ -21,6 +21,11 @@ class UserService {
         throw new ApiError(HTTP_STATUS.CONFLICT, 'User with this email already exists');
       }
 
+      // For manager: use warehouses array and set primary warehouse
+      if (userData.warehouses && userData.warehouses.length > 0) {
+        userData.warehouse = userData.warehouses[0];
+      }
+
       // Create new user
       const user = new User(userData);
       await user.save();
@@ -54,7 +59,8 @@ class UserService {
     try {
       const user = await User.findOne({ email })
         .select('+password')
-        .populate('warehouse', 'code name location status');
+        .populate('warehouse', 'code name location status')
+        .populate('warehouses', 'code name location status');
       return user;
     } catch (error) {
       logger.error('Error finding user by email with warehouse:', error);
@@ -101,6 +107,7 @@ class UserService {
         User.find(filter)
           .select('-password')
           .populate('warehouse', 'code name location')
+          .populate('warehouses', 'code name location')
           .skip(skip)
           .limit(parseInt(limit))
           .sort({ createdAt: -1 }),
@@ -129,6 +136,11 @@ class UserService {
     try {
       // Don't allow password update through this method
       delete updateData.password;
+
+      // For manager: if warehouses array provided, set primary warehouse too
+      if (updateData.warehouses && updateData.warehouses.length > 0) {
+        updateData.warehouse = updateData.warehouses[0];
+      }
 
       const user = await User.findByIdAndUpdate(
         userId,

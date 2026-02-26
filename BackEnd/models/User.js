@@ -62,6 +62,11 @@ const userSchema = new mongoose.Schema(
         return this.role !== USER_ROLES.ADMIN;
       },
     },
+    // Multiple warehouses — used when role is 'manager'
+    warehouses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Warehouse',
+    }],
     lastLogin: {
       type: Date,
     },

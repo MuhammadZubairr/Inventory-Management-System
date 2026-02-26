@@ -61,13 +61,29 @@ export const createUserSchema = Joi.object({
     role: Joi.string()
       .valid(...Object.values(USER_ROLES))
       .default(USER_ROLES.STAFF),
+    // Single warehouse (staff / viewer / admin)
     warehouse: Joi.string().when('role', {
       is: USER_ROLES.ADMIN,
       then: Joi.optional(),
-      otherwise: Joi.required().messages({
-        'any.required': 'Warehouse is required for non-admin users',
+      otherwise: Joi.when('role', {
+        is: USER_ROLES.MANAGER,
+        then: Joi.optional(), // manager uses warehouses[] instead
+        otherwise: Joi.required().messages({
+          'any.required': 'Warehouse is required for non-admin users',
+        }),
       }),
     }),
+    // Multiple warehouses (manager only)
+    warehouses: Joi.array()
+      .items(Joi.string())
+      .when('role', {
+        is: USER_ROLES.MANAGER,
+        then: Joi.array().min(1).required().messages({
+          'array.min': 'At least one warehouse must be assigned to a manager',
+          'any.required': 'At least one warehouse must be assigned to a manager',
+        }),
+        otherwise: Joi.optional(),
+      }),
     phone: Joi.string().pattern(/^\+?[\d\s-()]+$/),
     department: Joi.string().max(100),
     status: Joi.string().valid(...Object.values(USER_STATUS)).default(USER_STATUS.ACTIVE),
@@ -81,6 +97,7 @@ export const updateUserSchema = Joi.object({
     role: Joi.string().valid(...Object.values(USER_ROLES)),
     status: Joi.string().valid(...Object.values(USER_STATUS)),
     warehouse: Joi.string(),
+    warehouses: Joi.array().items(Joi.string()).optional(),
     phone: Joi.string().pattern(/^\+?[\d\s-()]+$/),
     department: Joi.string().max(100),
   }),

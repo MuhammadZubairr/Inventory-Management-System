@@ -37,6 +37,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadUsers();
   loadWarehouses(); // Load warehouses for dropdown
 
+  // Role change → toggle warehouse section
+  const addRoleSelect = document.getElementById('addRole');
+  if (addRoleSelect) {
+    addRoleSelect.addEventListener('change', handleRoleChange);
+  }
+
+  // Reset warehouse section when modal closes
+  const addModalEl = document.getElementById('addUserModal');
+  if (addModalEl) {
+    addModalEl.addEventListener('hidden.bs.modal', () => {
+      handleRoleChange(); // reset to single mode
+    });
+  }
+
   // Event listeners
   if (addUserForm) {
     addUserForm.addEventListener('submit', handleAddUser);
@@ -118,9 +132,11 @@ function displayUsers(users) {
       roleBadgeClass = 'secondary';
     }
     
-    const warehouse = user.warehouse ? 
-      `${user.warehouse.code || ''} - ${user.warehouse.name || ''}` : 
-      '<span class="text-muted">N/A (Admin)</span>';
+    const warehouse = user.warehouses && user.warehouses.length > 0
+      ? user.warehouses.map(wh => `${wh.code || ''} — ${wh.name || ''}`).join(', ')
+      : user.warehouse
+        ? `${user.warehouse.code || ''} — ${user.warehouse.name || ''}`
+        : '<span class="text-muted">N/A</span>';
     const statusClass = user.status === 'active' ? 'success' : user.status === 'inactive' ? 'secondary' : 'warning';
     const statusText = user.status || 'active';
     
@@ -151,7 +167,7 @@ function displayUsers(users) {
   }).join('');
 }
 
-// Load warehouses for dropdown
+// Load warehouses for dropdown and checklist
 async function loadWarehouses() {
   try {
     const response = await fetch(`${API_BASE_URL}/warehouses`, {
@@ -161,23 +177,67 @@ async function loadWarehouses() {
     const data = await response.json();
 
     if (data.success && data.data && data.data.warehouses) {
+      const warehouses = data.data.warehouses;
+
+      // Single-select dropdown (Staff / Viewer)
       const warehouseSelect = document.getElementById('addWarehouse');
       if (warehouseSelect) {
-        if (data.data.warehouses.length === 0) {
-          warehouseSelect.innerHTML = '<option value="">No warehouses available</option>';
-          console.warn('No warehouses found. Please create a warehouse first.');
-        } else {
-          warehouseSelect.innerHTML = '<option value="">Select Warehouse</option>' +
-            data.data.warehouses.map(warehouse => 
-              `<option value="${warehouse._id}">${warehouse.code} - ${warehouse.name}</option>`
+        warehouseSelect.innerHTML = warehouses.length === 0
+          ? '<option value="">No warehouses available</option>'
+          : '<option value="">Select Warehouse</option>' +
+            warehouses.map(wh =>
+              `<option value="${wh._id}">${wh.code} - ${wh.name}</option>`
             ).join('');
-          console.log(`Loaded ${data.data.warehouses.length} warehouses`);
+      }
+
+      // Checklist (Manager)
+      const checklist = document.getElementById('addWarehouseChecklist');
+      if (checklist) {
+        if (warehouses.length === 0) {
+          checklist.innerHTML = '<div class="text-muted small">No warehouses available.</div>';
+        } else {
+          checklist.innerHTML = warehouses.map(wh => `
+            <div class="form-check mb-1">
+              <input class="form-check-input wh-manager-cb" type="checkbox"
+                id="mwh_${wh._id}" value="${wh._id}">
+              <label class="form-check-label" for="mwh_${wh._id}">
+                <span class="fw-semibold">${wh.code}</span>
+                <span class="text-muted"> — ${wh.name}</span>
+              </label>
+            </div>
+          `).join('');
         }
       }
+
+      console.log(`Loaded ${warehouses.length} warehouses`);
     }
   } catch (error) {
     console.error('Error loading warehouses:', error);
     showAlert('Failed to load warehouses. Please refresh the page.', 'danger');
+  }
+}
+
+// Toggle warehouse section based on selected role
+function handleRoleChange() {
+  const role = document.getElementById('addRole')?.value;
+  const singleSection = document.getElementById('singleWarehouseSection');
+  const multiSection = document.getElementById('multiWarehouseSection');
+  const singleSelect = document.getElementById('addWarehouse');
+
+  if (role === 'manager') {
+    singleSection.style.display = 'none';
+    multiSection.style.display = 'block';
+    singleSelect.removeAttribute('required');
+  } else {
+    singleSection.style.display = 'block';
+    multiSection.style.display = 'none';
+    singleSelect.setAttribute('required', 'required');
+    // Uncheck all manager checkboxes
+    document.querySelectorAll('#addWarehouseChecklist .wh-manager-cb').forEach(cb => {
+      cb.checked = false;
+    });
+    const errEl = document.getElementById('addWarehouseError');
+    if (errEl) errEl.style.display = 'none';
   }
 }
 
@@ -195,18 +255,11 @@ async function handleAddUser(e) {
   e.preventDefault();
 
   const formData = new FormData(addUserForm);
-  const warehouse = formData.get('warehouse');
   const role = formData.get('role');
-  
+
   // Validate role selection
   if (!role || role === '') {
     showAlert('Please select a user role', 'danger');
-    return;
-  }
-  
-  // Validate warehouse selection
-  if (!warehouse || warehouse === '') {
-    showAlert('Please select a warehouse', 'danger');
     return;
   }
 
@@ -214,9 +267,8 @@ async function handleAddUser(e) {
     name: formData.get('name'),
     email: formData.get('email'),
     password: formData.get('password'),
-    role: role, // Use selected role instead of hardcoded 'staff'
+    role: role,
     status: formData.get('isActive') === 'true' ? 'active' : 'inactive',
-    warehouse: warehouse.trim() // Trim whitespace
   };
 
   // Validate password confirmation
@@ -226,7 +278,34 @@ async function handleAddUser(e) {
     return;
   }
 
-  console.log('Sending user data:', userData); // Debug log
+  if (role === 'manager') {
+    // Collect all checked warehouses
+    const checkedWarehouses = [];
+    document.querySelectorAll('#addWarehouseChecklist .wh-manager-cb:checked').forEach(cb => {
+      checkedWarehouses.push(cb.value);
+    });
+
+    if (checkedWarehouses.length === 0) {
+      const errEl = document.getElementById('addWarehouseError');
+      if (errEl) errEl.style.display = 'block';
+      showAlert('Please select at least one warehouse for the manager.', 'danger');
+      return;
+    }
+
+    const errEl = document.getElementById('addWarehouseError');
+    if (errEl) errEl.style.display = 'none';
+    userData.warehouses = checkedWarehouses;
+  } else {
+    // Single warehouse for staff / viewer
+    const warehouse = formData.get('warehouse');
+    if (!warehouse || warehouse === '') {
+      showAlert('Please select a warehouse', 'danger');
+      return;
+    }
+    userData.warehouse = warehouse.trim();
+  }
+
+  console.log('Sending user data:', userData);
 
   try {
     const response = await fetch(`${API_BASE_URL}/users`, {
@@ -236,7 +315,7 @@ async function handleAddUser(e) {
     });
 
     const data = await response.json();
-    console.log('Response:', data); // Debug log
+    console.log('Response:', data);
 
     if (!response.ok) {
       throw new Error(data.message || 'Failed to add user');
@@ -244,11 +323,12 @@ async function handleAddUser(e) {
 
     showAlert('User added successfully', 'success');
     addUserForm.reset();
-    
+    handleRoleChange(); // reset warehouse section UI
+
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
     if (modal) modal.hide();
-    
+
     loadUsers();
   } catch (error) {
     console.error('Error adding user:', error);
