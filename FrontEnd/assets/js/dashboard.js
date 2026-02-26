@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', handleLogout);
   });
 
-  // Refresh button
-  const refreshBtn = document.querySelector('.btn-outline-secondary');
+  // Refresh button - be more specific to avoid catching currency selector
+  const refreshBtn = document.querySelector('.btn-outline-secondary:has(.bi-arrow-clockwise)');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
       location.reload();

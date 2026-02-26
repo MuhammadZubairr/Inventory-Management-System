@@ -538,9 +538,10 @@ function initCurrencySelector() {
   // Find currency dropdown containers
   const currencyContainers = document.querySelectorAll('.currency-selector-container');
   
-  currencyContainers.forEach(container => {
+  currencyContainers.forEach((container, index) => {
     const currentCurrency = getUserCurrency();
     const icon = currentCurrency === 'USD' ? '$' : 'Rs';
+    const uniqueId = `currencyDropdown${index}`;
     
     // Get exchange rate info if available
     let exchangeRateInfo = '';
@@ -559,7 +560,7 @@ function initCurrencySelector() {
               <span>Last Updated:</span>
               <span>${lastUpdate}</span>
             </div>
-            <button class="btn btn-link btn-sm p-0 mt-1 refresh-rate-btn" style="font-size: 0.75rem;">
+            <button class="btn btn-link btn-sm p-0 mt-1 refresh-rate-btn" type="button" style="font-size: 0.75rem;">
               <i class="bi bi-arrow-clockwise"></i> Refresh Rate
             </button>
           </div>
@@ -572,13 +573,13 @@ function initCurrencySelector() {
       <div class="dropdown">
         <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-1" 
                 type="button" 
-                id="currencyDropdown" 
+                id="${uniqueId}" 
                 data-bs-toggle="dropdown" 
                 aria-expanded="false">
           <i class="bi ${currentCurrency === 'USD' ? 'bi-currency-dollar' : 'bi-cash'}"></i>
           <span class="currency-label">${currentCurrency}</span>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="currencyDropdown" style="min-width: 280px;">
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="${uniqueId}" style="min-width: 280px;">
           <li><h6 class="dropdown-header">Select Currency</h6></li>
           <li>
             <button class="dropdown-item currency-option ${currentCurrency === 'PKR' ? 'active' : ''}" 
@@ -670,14 +671,17 @@ async function handleCurrencyChange(newCurrency) {
 // Update currency display in selector
 function updateCurrencyDisplay(currency) {
   const labels = document.querySelectorAll('.currency-label');
-  const icons = document.querySelectorAll('#currencyDropdown i');
+  const buttons = document.querySelectorAll('[id^="currencyDropdown"]');
   
   labels.forEach(label => {
     label.textContent = currency;
   });
   
-  icons.forEach(icon => {
-    icon.className = currency === 'USD' ? 'bi bi-currency-dollar' : 'bi bi-cash';
+  buttons.forEach(button => {
+    const icon = button.querySelector('i');
+    if (icon) {
+      icon.className = currency === 'USD' ? 'bi bi-currency-dollar' : 'bi bi-cash';
+    }
   });
   
   // Update active state
