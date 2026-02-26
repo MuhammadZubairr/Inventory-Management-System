@@ -165,8 +165,8 @@
             <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <form id="addUserForm">
-            <div class="modal-body">
+          <form id="addUserForm" style="display:flex; flex-direction:column; flex:1 1 auto; overflow:hidden; min-height:0;">
+            <div class="modal-body" style="overflow-y:auto;">
               <div class="mb-3">
                 <label for="addName" class="form-label">Full Name *</label>
                 <input type="text" class="form-control" id="addName" name="name" required>
