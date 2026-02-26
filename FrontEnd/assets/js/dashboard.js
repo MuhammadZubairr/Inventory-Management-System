@@ -8,19 +8,6 @@ const getHeaders = () => ({
   'Authorization': `Bearer ${getToken()}`
 });
 
-// Format currency - uses global utility if available
-const formatCurrency = (amount) => {
-  // Use global formatPrice from currency.js if available
-  if (typeof window.formatPrice === 'function') {
-    return window.formatPrice(amount);
-  }
-  // Fallback to PKR
-  return 'Rs ' + new Intl.NumberFormat('en-PK', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(amount);
-};
-
 // Format date
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -147,10 +134,10 @@ function displayDashboardStats(stats) {
     const timer = setInterval(() => {
       currentValue += increment;
       if (currentValue >= target) {
-        stockValueEl.textContent = formatCurrency(target);
+        stockValueEl.textContent = window.formatPrice ? window.formatPrice(target) : `Rs ${target}`;
         clearInterval(timer);
       } else {
-        stockValueEl.textContent = formatCurrency(Math.round(currentValue));
+        stockValueEl.textContent = window.formatPrice ? window.formatPrice(Math.round(currentValue)) : `Rs ${Math.round(currentValue)}`;
       }
     }, 16);
   }
