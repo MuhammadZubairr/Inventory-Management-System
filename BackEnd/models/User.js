@@ -58,8 +58,15 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
       required: function() {
-        // Warehouse is required for non-admin users (staff, manager, viewer)
-        return this.role !== USER_ROLES.ADMIN;
+        // Warehouse is required for non-admin users, unless warehouses array is provided (for managers)
+        if (this.role === USER_ROLES.ADMIN) {
+          return false;
+        }
+        // If warehouses array exists and has items, warehouse will be set automatically
+        if (this.warehouses && this.warehouses.length > 0) {
+          return false;
+        }
+        return true;
       },
     },
     // Multiple warehouses — used when role is 'manager'

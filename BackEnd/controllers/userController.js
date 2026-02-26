@@ -27,7 +27,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const createUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role, status, warehouse } = req.body;
+  const { name, email, password, role, status, warehouse, warehouses } = req.body;
 
   const user = await userService.createUser({
     name,
@@ -36,6 +36,7 @@ export const createUser = asyncHandler(async (req, res) => {
     role,
     status,
     warehouse,
+    warehouses,
   });
 
   res.status(HTTP_STATUS.CREATED).json(
