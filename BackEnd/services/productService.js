@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
+import Transaction from '../models/Transaction.js';
 import ApiError from '../utils/ApiError.js';
-import { HTTP_STATUS, PRODUCT_STATUS } from '../config/constants.js';
+import { HTTP_STATUS, PRODUCT_STATUS, TRANSACTION_TYPES, TRANSACTION_STATUS } from '../config/constants.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -37,6 +38,37 @@ class ProductService {
 
       const product = await Product.create(productData);
       logger.info(`Product created: ${product._id}`);
+
+      // Auto-create a STOCK_IN transaction for every warehouse that received stock
+      if (productData.warehouseStock && productData.warehouseStock.length > 0) {
+        const stockInWarehouses = productData.warehouseStock.filter(ws => (ws.quantity || 0) > 0);
+
+        for (const ws of stockInWarehouses) {
+          try {
+            const transactionNumber = await Transaction.generateTransactionNumber(
+              TRANSACTION_TYPES.STOCK_IN
+            );
+            await Transaction.create({
+              transactionNumber,
+              type: TRANSACTION_TYPES.STOCK_IN,
+              status: TRANSACTION_STATUS.COMPLETED,
+              product: product._id,
+              quantity: ws.quantity,
+              unitPrice: product.unitPrice,
+              totalPrice: ws.quantity * product.unitPrice,
+              warehouse: ws.warehouse,
+              supplier: product.supplier || null,
+              notes: 'Initial stock assigned during product creation',
+              performedBy: productData.createdBy,
+              transactionDate: new Date(),
+            });
+          } catch (txErr) {
+            // Log but don't fail the whole request — product is already saved
+            logger.error(`Failed to create stock_in transaction for warehouse ${ws.warehouse} during product creation:`, txErr);
+          }
+        }
+      }
+
       return product;
     } catch (error) {
       if (error instanceof ApiError) throw error;
