@@ -133,6 +133,7 @@ export const getUserDashboardStats = asyncHandler(async (req, res) => {
       HTTP_STATUS.OK,
       {
         user: {
+          _id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,

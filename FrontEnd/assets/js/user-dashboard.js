@@ -269,16 +269,19 @@ async function loadDashboardStats() {
     if (data.success && data.data) {
       console.log('✅ [User Dashboard] Updating dashboard with data:', data.data);
       
-      // Save user data to localStorage if available (but NOT warehouse — it is already
-      // correctly set by login.js or manager-warehouse-select.js; overwriting it here
-      // was the root cause of the "Ali Warehouse" bug where the user's primary/default
-      // warehouse replaced the manager's selected warehouse)
+      // Save user data to localStorage and update the DOM from the verified API response.
+      // The init code already set DOM from localStorage, but localStorage can be stale
+      // (e.g. from a previous session). Refreshing the DOM here ensures the correct
+      // logged-in user's name is always shown in the navbar.
       if (data.data.user) {
         console.log('💾 [User Dashboard] Saving user data to localStorage');
-        localStorage.setItem('userId', data.data.user._id);
+        if (data.data.user._id) localStorage.setItem('userId', data.data.user._id);
         localStorage.setItem('userName', data.data.user.name);
         localStorage.setItem('userEmail', data.data.user.email);
         localStorage.setItem('userRole', data.data.user.role);
+        // Always refresh the navbar name from the API-verified data
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) userNameEl.textContent = data.data.user.name || getUserName() || 'User';
       }
       
       // Only update the warehouse display text — do NOT overwrite warehouseId/warehouseName
