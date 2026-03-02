@@ -476,11 +476,18 @@ async function loadTransactionsReport(page = 1) {
   if (!reportContainer) return;
 
   txSummaryPage = page;
-  showLoading(reportContainer);
+
+  // Capture search state BEFORE replacing content (so focus can be restored)
+  const searchInput = document.getElementById('txSearchInput');
+  const search = searchInput ? searchInput.value.trim() : '';
+  const wasSearchFocused = document.activeElement === searchInput;
+
+  // Only show full loading spinner on initial/page load, not on search keystrokes
+  if (!wasSearchFocused) {
+    showLoading(reportContainer);
+  }
 
   try {
-    const searchInput = document.getElementById('txSearchInput');
-    const search = searchInput ? searchInput.value.trim() : '';
 
     const params = new URLSearchParams({
       page,
@@ -551,7 +558,9 @@ async function loadTransactionsReport(page = 1) {
             <input type="text" id="txSearchInput" class="form-control border-start-0"
               placeholder="Search by product name or SKU…"
               value="${search}"
-              oninput="clearTimeout(window._txSearchTimer); window._txSearchTimer=setTimeout(()=>loadTransactionsReport(1),400)">
+              oninput="clearTimeout(window._txSearchTimer); window._txSearchTimer=setTimeout(()=>loadTransactionsReport(1),400)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();clearTimeout(window._txSearchTimer);loadTransactionsReport(1);}"
+              autocomplete="off">
           </div>
         </div>
       </div>
@@ -662,6 +671,16 @@ async function loadTransactionsReport(page = 1) {
         ` : ''}
       </div>
     `;
+
+    // Restore focus to search input if user was actively typing (avoids jarring re-render)
+    if (wasSearchFocused) {
+      const newInput = document.getElementById('txSearchInput');
+      if (newInput) {
+        newInput.focus();
+        const len = newInput.value.length;
+        newInput.setSelectionRange(len, len);
+      }
+    }
 
   } catch (error) {
     console.error('❌ [Transactions Report] Error:', error);

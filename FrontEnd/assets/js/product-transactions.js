@@ -21,7 +21,7 @@ const getHeaders = () => ({
   'Authorization': `Bearer ${localStorage.getItem('token')}`,
 });
 
-const formatPrice = (amount) => {
+const formatTxPrice = (amount) => {
   if (typeof window.formatPrice === 'function') return window.formatPrice(amount);
   return 'Rs ' + new Intl.NumberFormat('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 };
@@ -158,7 +158,7 @@ function openDetailModal(t) {
         </div>
         <div class="ms-auto text-end">
           <div class="text-muted small">Total Value</div>
-          <div class="fw-bold fs-5">${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</div>
+          <div class="fw-bold fs-5">${formatTxPrice((t.quantity || 0) * (t.unitPrice || 0))}</div>
         </div>
       </div>
     </div>
@@ -199,11 +199,11 @@ function openDetailModal(t) {
                 </tr>
                 <tr>
                   <td class="text-muted fw-semibold">Unit Price</td>
-                  <td>${formatPrice(t.unitPrice || 0)}</td>
+                  <td>${formatTxPrice(t.unitPrice || 0)}</td>
                 </tr>
                 <tr>
                   <td class="text-muted fw-semibold">Total Value</td>
-                  <td><strong>${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</strong></td>
+                  <td><strong>${formatTxPrice((t.quantity || 0) * (t.unitPrice || 0))}</strong></td>
                 </tr>
               </tbody>
             </table>
@@ -398,8 +398,8 @@ function renderTransactions(transactions, pagination) {
                     <td style="white-space:nowrap;"><small>${fmtDate(t.createdAt)}</small></td>
                     <td class="text-center">${typeBadge}</td>
                     <td class="text-end fw-bold">${t.quantity.toLocaleString()}</td>
-                    <td class="text-end">${formatPrice(t.unitPrice || 0)}</td>
-                    <td class="text-end fw-semibold">${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</td>
+                    <td class="text-end">${formatTxPrice(t.unitPrice || 0)}</td>
+                    <td class="text-end fw-semibold">${formatTxPrice((t.quantity || 0) * (t.unitPrice || 0))}</td>
                     <td>${warehouseCell}</td>
                     <td>${t.performedBy?.name || '—'}</td>
                     <td>${t.supplier?.name || '—'}</td>
