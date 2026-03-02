@@ -105,6 +105,194 @@ async function loadTransactions(page = 1) {
   }
 }
 
+// ── Detail modal ──────────────────────────────────────────────────────────
+let txDetailModal = null;
+
+function openDetailModal(t) {
+  if (!txDetailModal) {
+    txDetailModal = new bootstrap.Modal(document.getElementById('txDetailModal'));
+  }
+
+  const isIn = t.type === 'stock_in';
+  const typeBadge = isIn
+    ? '<span class="badge bg-success fs-6"><i class="bi bi-plus-circle me-1"></i>Stock In</span>'
+    : '<span class="badge bg-danger  fs-6"><i class="bi bi-dash-circle me-1"></i>Stock Out</span>';
+
+  // Header colour
+  const header = document.getElementById('txDetailModalHeader');
+  header.className = `modal-header ${isIn ? 'bg-success' : 'bg-danger'} text-white`;
+  header.querySelector('.btn-close').className = 'btn-close btn-close-white';
+
+  // Warehouse location string
+  const wh = t.warehouse || {};
+  const loc = wh.location || {};
+  const locationParts = [loc.address, loc.city, loc.state, loc.country, loc.zipCode].filter(Boolean);
+  const locationStr = locationParts.length ? locationParts.join(', ') : '—';
+
+  // Performed by
+  const by = t.performedBy || {};
+  const byStr = by.name ? `${by.name}${by.email ? ` &lt;${by.email}&gt;` : ''}${by.role ? ` · <em>${by.role}</em>` : ''}` : '—';
+
+  // Approved by
+  const approvedBy = t.approvedBy;
+  const approvedStr = approvedBy?.name ? `${approvedBy.name}${approvedBy.email ? ` &lt;${approvedBy.email}&gt;` : ''}` : '—';
+
+  // Supplier
+  const sup = t.supplier || {};
+  const supStr = sup.name ? `${sup.name}${sup.company ? ` — ${sup.company}` : ''}${sup.phone ? ` · ${sup.phone}` : ''}` : '—';
+
+  // Transaction date (use transactionDate field if available, fall back to createdAt)
+  const txDateStr  = fmtDateFull(t.transactionDate || t.createdAt);
+  const createdStr = fmtDateFull(t.createdAt);
+
+  document.getElementById('txDetailModalLabel').innerHTML =
+    `<i class="bi bi-receipt me-2"></i>${t.transactionNumber || 'Transaction Detail'}`;
+
+  document.getElementById('txDetailModalBody').innerHTML = `
+    <div class="row g-0 mb-3">
+      <div class="col-12 d-flex align-items-center gap-3 p-3 rounded" style="background:#f8f9fa;">
+        ${typeBadge}
+        <div>
+          <div class="fw-bold fs-5">${escapeHtml(t.product?.name || productName)}</div>
+          <div class="text-muted small">SKU: ${t.product?.sku || '—'} &nbsp;|&nbsp; Category: ${t.product?.category || '—'}</div>
+        </div>
+        <div class="ms-auto text-end">
+          <div class="text-muted small">Total Value</div>
+          <div class="fw-bold fs-5">${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- Left column -->
+      <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-info-circle me-2 text-primary"></i>Transaction Info
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-muted fw-semibold" style="width:45%;">Transaction #</td>
+                  <td><code>${t.transactionNumber || '—'}</code></td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Reference #</td>
+                  <td>${t.referenceNumber || '—'}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Status</td>
+                  <td><span class="badge bg-success">${t.status || 'completed'}</span></td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Transaction Date</td>
+                  <td>${txDateStr}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Recorded At</td>
+                  <td>${createdStr}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Quantity</td>
+                  <td><strong>${(t.quantity || 0).toLocaleString()} units</strong></td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Unit Price</td>
+                  <td>${formatPrice(t.unitPrice || 0)}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Total Value</td>
+                  <td><strong>${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-building me-2 text-primary"></i>Warehouse
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-muted fw-semibold" style="width:45%;">Name</td>
+                  <td><strong>${escapeHtml(wh.name || '—')}</strong></td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Code</td>
+                  <td><code>${wh.code || '—'}</code></td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Location</td>
+                  <td>${escapeHtml(locationStr)}</td>
+                </tr>
+                ${wh.contactPerson ? `<tr><td class="text-muted fw-semibold">Contact</td><td>${escapeHtml(wh.contactPerson)}</td></tr>` : ''}
+                ${wh.phone ? `<tr><td class="text-muted fw-semibold">Phone</td><td>${escapeHtml(wh.phone)}</td></tr>` : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-person me-2 text-primary"></i>People
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-muted fw-semibold" style="width:45%;">Performed By</td>
+                  <td>${byStr}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Approved By</td>
+                  <td>${approvedStr}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted fw-semibold">Supplier</td>
+                  <td>${supStr}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes & Reason full width -->
+      ${(t.notes || t.reason) ? `
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-chat-left-text me-2 text-primary"></i>Notes &amp; Reason
+          </div>
+          <div class="card-body">
+            ${t.reason ? `<p class="mb-1"><span class="fw-semibold text-muted">Reason:</span> ${escapeHtml(t.reason)}</p>` : ''}
+            ${t.notes  ? `<p class="mb-0"><span class="fw-semibold text-muted">Notes:</span> ${escapeHtml(t.notes)}</p>`  : ''}
+          </div>
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+
+  txDetailModal.show();
+}
+
+// Full date + time formatter for modal
+const fmtDateFull = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-US', {
+    weekday: 'short',
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+};
+
 // ── Render table ───────────────────────────────────────────────────────────
 function renderTransactions(transactions, pagination) {
   const container = document.getElementById('transactionsContent');
@@ -152,16 +340,19 @@ function renderTransactions(transactions, pagination) {
 
     <!-- Table -->
     <div class="card">
-      <div class="card-header bg-white d-flex align-items-center justify-content-between">
+      <div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
         <h5 class="mb-0">
           <i class="bi bi-clock-history me-2"></i>
           ${escapeHtml(productName)} — Transaction History
         </h5>
-        <small class="text-muted">
-          ${pagination.total > 0
-            ? `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, pagination.total)} of ${pagination.total}`
-            : '0 records'}
-        </small>
+        <div class="d-flex align-items-center gap-3">
+          <small class="text-muted"><i class="bi bi-hand-index me-1"></i>Click any row for full details</small>
+          <small class="text-muted">
+            ${pagination.total > 0
+              ? `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, pagination.total)} of ${pagination.total}`
+              : '0 records'}
+          </small>
+        </div>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -177,13 +368,12 @@ function renderTransactions(transactions, pagination) {
                 <th>Warehouse</th>
                 <th>Performed By</th>
                 <th>Supplier</th>
-                <th>Notes</th>
               </tr>
             </thead>
             <tbody>
               ${transactions.length === 0 ? `
                 <tr>
-                  <td colspan="10" class="text-center text-muted py-5">
+                  <td colspan="9" class="text-center text-muted py-5">
                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                     No transactions found for the selected period
                   </td>
@@ -194,18 +384,25 @@ function renderTransactions(transactions, pagination) {
                   ? '<span class="badge bg-success"><i class="bi bi-plus-circle me-1"></i>Stock In</span>'
                   : '<span class="badge bg-danger"><i class="bi bi-dash-circle me-1"></i>Stock Out</span>';
 
+                const wh = t.warehouse || {};
+                const loc = wh.location || {};
+                const city = loc.city ? ` <small class="text-muted d-block">${loc.city}${loc.state ? ', ' + loc.state : ''}</small>` : '';
+                const warehouseCell = `<strong>${wh.name || '—'}</strong>${wh.code ? ` <code class="ms-1">${wh.code}</code>` : ''}${city}`;
+
+                // Encode the full transaction as JSON for the click handler
+                const tJson = escapeAttr(JSON.stringify(t));
+
                 return `
-                  <tr>
+                  <tr style="cursor:pointer;" title="Click for full details" data-tx="${tJson}">
                     <td><code class="small">${t.transactionNumber || '—'}</code></td>
                     <td style="white-space:nowrap;"><small>${fmtDate(t.createdAt)}</small></td>
                     <td class="text-center">${typeBadge}</td>
                     <td class="text-end fw-bold">${t.quantity.toLocaleString()}</td>
                     <td class="text-end">${formatPrice(t.unitPrice || 0)}</td>
                     <td class="text-end fw-semibold">${formatPrice((t.quantity || 0) * (t.unitPrice || 0))}</td>
-                    <td>${t.warehouse?.name || '—'}</td>
+                    <td>${warehouseCell}</td>
                     <td>${t.performedBy?.name || '—'}</td>
                     <td>${t.supplier?.name || '—'}</td>
-                    <td><small class="text-muted">${t.notes || '—'}</small></td>
                   </tr>`;
               }).join('')}
             </tbody>
@@ -303,21 +500,39 @@ async function exportCsv() {
     const result   = await response.json();
     const rows     = result.data?.transactions || [];
 
-    const headers  = ['Transaction #', 'Date', 'Type', 'Quantity', 'Unit Price', 'Total Value', 'Warehouse', 'Performed By', 'Supplier', 'Notes'];
+    const headers  = [
+      'Transaction #', 'Reference #', 'Date', 'Transaction Date', 'Type', 'Status',
+      'Quantity', 'Unit Price', 'Total Value',
+      'Warehouse Name', 'Warehouse Code', 'Warehouse City', 'Warehouse State',
+      'Performed By', 'Performed By Email',
+      'Supplier', 'Reason', 'Notes',
+    ];
     const csvRows  = [headers];
 
     rows.forEach(t => {
+      const wh  = t.warehouse  || {};
+      const loc = wh.location  || {};
+      const by  = t.performedBy || {};
+      const sup = t.supplier    || {};
       csvRows.push([
         t.transactionNumber || '',
+        t.referenceNumber   || '',
         fmtDate(t.createdAt),
+        fmtDate(t.transactionDate || t.createdAt),
         t.type === 'stock_in' ? 'Stock In' : 'Stock Out',
+        t.status || 'completed',
         t.quantity,
         t.unitPrice || 0,
         (t.quantity || 0) * (t.unitPrice || 0),
-        t.warehouse?.name || '',
-        t.performedBy?.name || '',
-        t.supplier?.name || '',
-        (t.notes || '').replace(/"/g, '""'),
+        wh.name  || '',
+        wh.code  || '',
+        loc.city  || '',
+        loc.state || '',
+        by.name  || '',
+        by.email || '',
+        sup.name || '',
+        (t.reason || '').replace(/"/g, '""'),
+        (t.notes  || '').replace(/"/g, '""'),
       ]);
     });
 
@@ -346,6 +561,14 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// Escape for HTML attribute (data-tx JSON)
+function escapeAttr(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ── Populate product info card (from URL / optional API call) ──────────────
@@ -411,6 +634,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial load (all time)
   await loadTransactions(1);
+
+  // ── Row click → detail modal ────────────────────────────────────────────
+  // Use event delegation so it works after every re-render
+  document.getElementById('transactionsContent').addEventListener('click', (e) => {
+    const row = e.target.closest('tr[data-tx]');
+    if (!row) return;
+    try {
+      const tx = JSON.parse(row.dataset.tx);
+      openDetailModal(tx);
+    } catch (_) {}
+  });
 
   // ── Preset buttons ──────────────────────────────────────────────────────
   document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {

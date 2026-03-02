@@ -190,10 +190,11 @@ class TransactionService {
 
       const [transactions, total] = await Promise.all([
         Transaction.find(query)
-          .populate('product', 'name sku')
-          .populate('supplier', 'name company')
-          .populate('warehouse', 'name')
-          .populate('performedBy', 'name email')
+          .populate('product', 'name sku category')
+          .populate('supplier', 'name company email phone')
+          .populate('warehouse', 'name code location contactPerson phone')
+          .populate('performedBy', 'name email role')
+          .populate('approvedBy', 'name email')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(parseInt(limit)),
