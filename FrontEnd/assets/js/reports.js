@@ -569,7 +569,10 @@ async function loadTransactionsReport(page = 1) {
       <div class="card">
         <div class="card-header bg-white d-flex align-items-center justify-content-between">
           <h5 class="mb-0"><i class="bi bi-table me-2"></i>Products — Transaction Summary</h5>
-          <small class="text-muted">Showing ${(page - 1) * TX_SUMMARY_PAGE_SIZE + 1}–${Math.min(page * TX_SUMMARY_PAGE_SIZE, pagination.total || 0)} of ${pagination.total || 0}</small>
+          <div class="d-flex align-items-center gap-3">
+            <small class="text-muted"><i class="bi bi-hand-index me-1"></i>Click any row for full history</small>
+            <small class="text-muted">Showing ${(page - 1) * TX_SUMMARY_PAGE_SIZE + 1}–${Math.min(page * TX_SUMMARY_PAGE_SIZE, pagination.total || 0)} of ${pagination.total || 0}</small>
+          </div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -583,13 +586,12 @@ async function loadTransactionsReport(page = 1) {
                   <th class="text-center">Current Stock</th>
                   <th class="text-center">Transactions</th>
                   <th>Last Activity</th>
-                  <th class="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
                 ${summary.length === 0 ? `
                   <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
+                    <td colspan="7" class="text-center text-muted py-5">
                       <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                       No transaction data found
                     </td>
@@ -602,8 +604,10 @@ async function loadTransactionsReport(page = 1) {
                     : '—';
                   const stockBadgeClass = currentStock > 0 ? 'bg-success' : 'bg-danger';
 
+                  const txUrl = `product-transactions.html?productId=${product._id}&productName=${encodeURIComponent(product.name || '')}`;
                   return `
-                    <tr>
+                    <tr style="cursor:pointer;" title="Click to view full transaction history"
+                        onclick="window.location.href='${txUrl}'">
                       <td>
                         <div class="fw-semibold">${product.name || '—'}</div>
                         <small class="text-muted">${product.category || ''}</small>
@@ -622,12 +626,6 @@ async function loadTransactionsReport(page = 1) {
                         <span class="badge bg-secondary rounded-pill">${row.totalTransactions || 0}</span>
                       </td>
                       <td><small class="text-muted">${lastDate}</small></td>
-                      <td class="text-center">
-                        <a href="product-transactions.html?productId=${product._id}&productName=${encodeURIComponent(product.name || '')}"
-                           class="btn btn-sm btn-outline-primary">
-                          <i class="bi bi-eye me-1"></i>View Details
-                        </a>
-                      </td>
                     </tr>
                   `;
                 }).join('')}
