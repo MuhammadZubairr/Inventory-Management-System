@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "cd BackEnd && npm install && node index.js"
+  },
   "dependencies": {
     "multer": "^2.0.2"
   }
