@@ -116,8 +116,10 @@ class ProductService {
         query.status = status;
       }
 
-      // Filter by price range
-      query.unitPrice = { $gte: minPrice, $lte: maxPrice };
+      // Filter by price range (only apply if explicitly provided)
+      if (minPrice > 0 || maxPrice < Number.MAX_SAFE_INTEGER) {
+        query.unitPrice = { $gte: minPrice, $lte: maxPrice };
+      }
 
       // Calculate pagination
       const skip = (page - 1) * limit;

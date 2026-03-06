@@ -93,6 +93,7 @@ async function loadProducts() {
     console.log('Token:', getToken() ? 'exists' : 'missing');
     
     const params = new URLSearchParams();
+    params.append('limit', '1000'); // fetch all products (no pagination UI)
     
     if (searchInput && searchInput.value) {
       params.append('search', searchInput.value);
