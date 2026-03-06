@@ -35,11 +35,17 @@ import './models/Supplier.js';
 import './models/Transaction.js';
 import './models/Warehouse.js';
 
-// Middleware
-app.use(cors({
-  origin: true, // Allow all origins including file://
+// CORS configuration
+const corsOptions = {
+  origin: true, // Reflect the request origin (allows all origins including file://)
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
+// Middleware
+app.options('*', cors(corsOptions)); // Handle preflight requests for all routes
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
