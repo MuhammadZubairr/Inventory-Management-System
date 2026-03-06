@@ -56,14 +56,14 @@ export const authenticate = asyncHandler(async (req, res, next) => {
  * Checks if user has required role(s)
  * @param {Array<string>} allowedRoles - Array of allowed roles
  */
-export const authorize = (allowedRoles) => {
+export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'User not authenticated.');
     }
 
-    // Handle both array and spread arguments
-    const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+    // Flatten in case an array was passed directly: authorize(['admin', 'manager'])
+    const roles = allowedRoles.flat();
 
     if (!roles.includes(req.user.role)) {
       logger.warn('Unauthorized access attempt:', {
