@@ -172,7 +172,7 @@ function showAlert(message, type = 'info') {
 async function loadProducts() {
   try {
     const user = getUser();
-    const response = await fetch(`${window.API_BASE_URL}/products`, {
+    const response = await fetch(`${window.API_BASE_URL}/products?limit=1000`, {
       headers: getHeaders()
     });
 

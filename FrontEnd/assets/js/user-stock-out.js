@@ -131,7 +131,7 @@ function showAlert(message, type = 'info') {
 // Load products into productsData array
 async function loadProducts() {
   try {
-    const response = await fetch(`${window.API_BASE_URL}/products`, {
+    const response = await fetch(`${window.API_BASE_URL}/products?limit=1000`, {
       headers: getHeaders()
     });
 
