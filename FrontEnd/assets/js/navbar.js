@@ -636,34 +636,56 @@ function initCurrencySelector() {
 // Handle currency change
 async function handleCurrencyChange(newCurrency) {
   try {
-    // Update localStorage
-    setUserCurrency(newCurrency);
-    
-    // Update backend
+    // Update backend first
     const token = getToken();
-    if (token) {
-      const response = await fetch(`${window.API_BASE_URL}/users/update-currency`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ currency: newCurrency })
-      });
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    console.log('🔄 Changing currency to:', newCurrency);
+    
+    const response = await fetch(`${window.API_BASE_URL}/users/update-currency`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ currency: newCurrency })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update currency');
+    }
+
+    const data = await response.json();
+    console.log('✅ API Response:', data);
+    
+    // Extract updated user from different possible response structures
+    const updatedUser = data.data?.user || data.user || data.data;
+    
+    if (updatedUser && updatedUser.currency) {
+      // Store the updated user object with currency from API response
+      const userStr = JSON.stringify(updatedUser);
+      sessionStorage.setItem('user', userStr);
+      localStorage.setItem('user', userStr);
+      console.log('✅ Currency saved to storage:', updatedUser.currency);
       
-      if (response.ok) {
-        console.log('Currency updated successfully');
-      }
+      // Give storage a moment to persist before reload
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+      console.warn('⚠️ Updated user object missing currency field:', updatedUser);
     }
     
-    // Update UI
+    // Update UI to show new currency immediately
     updateCurrencyDisplay(newCurrency);
     
-    // Reload page to apply currency changes
+    // Reload page to apply currency changes to all displays
     window.location.reload();
     
   } catch (error) {
-    console.error('Error updating currency:', error);
+    console.error('❌ Error updating currency:', error);
+    alert('Failed to update currency: ' + error.message);
   }
 }
 
