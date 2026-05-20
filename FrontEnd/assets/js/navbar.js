@@ -643,8 +643,12 @@ async function handleCurrencyChange(newCurrency) {
     }
 
     console.log('🔄 Changing currency to:', newCurrency);
+    console.log('📍 API URL:', window.API_BASE_URL);
     
-    const response = await fetch(`${window.API_BASE_URL}/users/update-currency`, {
+    const updateUrl = `${window.API_BASE_URL}/users/update-currency`;
+    console.log('📍 Calling:', updateUrl);
+    
+    const response = await fetch(updateUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -653,35 +657,72 @@ async function handleCurrencyChange(newCurrency) {
       body: JSON.stringify({ currency: newCurrency })
     });
     
+    console.log('📡 Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to update currency');
+      throw new Error(errorData.message || `API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('✅ API Response:', data);
+    console.log('✅ Full API Response:', JSON.stringify(data, null, 2));
     
-    // Extract updated user from different possible response structures
-    const updatedUser = data.data?.user || data.user || data.data;
-    
-    if (updatedUser && updatedUser.currency) {
-      // Store the updated user object with currency from API response
-      const userStr = JSON.stringify(updatedUser);
-      sessionStorage.setItem('user', userStr);
-      localStorage.setItem('user', userStr);
-      console.log('✅ Currency saved to storage:', updatedUser.currency);
-      
-      // Give storage a moment to persist before reload
-      await new Promise(resolve => setTimeout(resolve, 100));
-    } else {
-      console.warn('⚠️ Updated user object missing currency field:', updatedUser);
+    // Extract updated user - try the expected structure first
+    let updatedUser = null;
+    if (data.data && data.data.user) {
+      updatedUser = data.data.user;
+      console.log('✅ Found user at data.data.user');
+    } else if (data.user) {
+      updatedUser = data.user;
+      console.log('✅ Found user at data.user');
+    } else if (data.data) {
+      updatedUser = data.data;
+      console.log('✅ Found user at data.data');
     }
     
-    // Update UI to show new currency immediately
-    updateCurrencyDisplay(newCurrency);
+    console.log('📦 Extracted user object:', JSON.stringify(updatedUser, null, 2));
     
-    // Reload page to apply currency changes to all displays
-    window.location.reload();
+    if (updatedUser) {
+      if (updatedUser.currency) {
+        console.log('✅ Currency field found:', updatedUser.currency);
+      } else {
+        console.warn('⚠️ Currency field NOT found in user object');
+        console.log('🔍 User object keys:', Object.keys(updatedUser));
+      }
+      
+      // Store the updated user object in sessionStorage immediately (faster than localStorage)
+      const userStr = JSON.stringify(updatedUser);
+      sessionStorage.setItem('user', userStr);
+      console.log('✅ User stored in sessionStorage');
+      
+      // Also store in localStorage for persistence
+      localStorage.setItem('user', userStr);
+      console.log('✅ User stored in localStorage');
+      
+      // Verify the data was actually stored
+      const verifySession = sessionStorage.getItem('user');
+      const verifyLocal = localStorage.getItem('user');
+      console.log('✅ Verification - sessionStorage has user:', !!verifySession);
+      console.log('✅ Verification - localStorage has user:', !!verifyLocal);
+      
+      if (verifySession) {
+        const verifyParsed = JSON.parse(verifySession);
+        console.log('✅ Stored currency in sessionStorage:', verifyParsed.currency);
+      }
+      
+      // Give storage a longer moment to persist before reload (200ms instead of 100ms)
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Update UI to show new currency immediately BEFORE reload
+      updateCurrencyDisplay(newCurrency);
+      
+      // Reload page to apply currency changes to all displays
+      console.log('🔄 Reloading page after ensuring data is persisted...');
+      window.location.reload();
+    } else {
+      console.error('❌ Could not extract user from response');
+      throw new Error('Invalid response structure from server');
+    }
     
   } catch (error) {
     console.error('❌ Error updating currency:', error);

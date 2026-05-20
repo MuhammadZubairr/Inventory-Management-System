@@ -9,6 +9,7 @@ import {
 import validate from '../middleware/validate.js';
 import { registerSchema, loginSchema } from '../validators/userValidator.js';
 import { authenticate } from '../middleware/auth.js';
+import userService from '../services/userService.js';
 
 const router = express.Router();
 
@@ -45,13 +46,29 @@ router.post('/verify-token', verifyToken);
 // @route   GET /api/auth/validate
 // @desc    Validate JWT token from Authorization header
 // @access  Private
-router.get('/validate', authenticate, (req, res) => {
-  // If authenticate middleware passes, token is valid
-  res.status(200).json({
-    success: true,
-    message: 'Token is valid',
-    data: { user: req.user }
-  });
+router.get('/validate', authenticate, async (req, res) => {
+  try {
+    // Fetch full user from database to include all fields like currency
+    const fullUser = await userService.findById(req.user.id);
+    
+    if (!fullUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid',
+      data: { user: fullUser.toSafeObject() }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error validating token'
+    });
+  }
 });
 
 export default router;
