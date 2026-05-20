@@ -690,6 +690,11 @@ async function handleCurrencyChange(newCurrency) {
         console.log('🔍 User object keys:', Object.keys(updatedUser));
       }
       
+      // Persist currency independently so backend rehydration cannot wipe it out
+      if (typeof window.setUserCurrency === 'function') {
+        window.setUserCurrency(newCurrency);
+      }
+
       // Store the updated user object in sessionStorage immediately (faster than localStorage)
       const userStr = JSON.stringify(updatedUser);
       sessionStorage.setItem('user', userStr);

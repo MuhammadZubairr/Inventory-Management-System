@@ -157,6 +157,12 @@ async function getExchangeRate() {
 
 // Get user's preferred currency from the stored user object.
 function getUserCurrency() {
+  const storedCurrency = sessionStorage.getItem('userCurrency') || localStorage.getItem('userCurrency');
+
+  if (storedCurrency) {
+    return storedCurrency;
+  }
+
   const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
 
   if (storedUser) {
@@ -174,6 +180,9 @@ function getUserCurrency() {
 // Update user's currency preference
 function setUserCurrency(currency) {
   const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+
+  sessionStorage.setItem('userCurrency', currency);
+  localStorage.setItem('userCurrency', currency);
 
   if (storedUser) {
     try {
