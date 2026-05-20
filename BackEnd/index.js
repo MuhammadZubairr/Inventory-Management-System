@@ -40,6 +40,15 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:3001', 'http://localhost:3000', 'http://127.0.0.1'];
 
+// Ensure common local dev origins are present in allowedOrigins so local frontends
+// running on typical dev ports are allowed. This explicitly adds only these
+// specific localhost entries (no wildcard) so other localhost ports remain blocked
+// unless explicitly listed in CORS_ORIGIN.
+['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5500', 'http://127.0.0.1']
+  .forEach(o => {
+    if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+  });
+
 const corsOptions = {
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, curl, Postman, etc.)
