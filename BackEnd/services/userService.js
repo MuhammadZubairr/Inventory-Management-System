@@ -228,7 +228,7 @@ class UserService {
   async updateProfile(userId, updateData) {
     try {
       // White list fields that can be updated by the user themselves
-      const allowedFields = ['name', 'phone', 'department', 'profileImage'];
+      const allowedFields = ['name', 'phone', 'department', 'profileImage', 'currency'];
       const filteredUpdate = {};
       
       Object.keys(updateData).forEach(key => {

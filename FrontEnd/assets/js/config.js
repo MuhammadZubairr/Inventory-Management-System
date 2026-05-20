@@ -6,7 +6,7 @@
 // Edit only these values when changing environments/domains.
 window.APP_ENV = Object.freeze({
   LOCAL_API_BASE_URL: 'http://localhost:3001/api',
-  PRODUCTION_API_BASE_URL: 'https://inventory-management-system-production-1c99.up.railway.app/api',
+  PRODUCTION_API_BASE_URL: 'https://prismbreaksolution.com/api',
 });
 
 function resolveApiBaseUrl() {
