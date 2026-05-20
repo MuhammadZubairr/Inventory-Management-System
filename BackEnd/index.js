@@ -112,7 +112,22 @@ app.get('/api', (req, res) => {
 });
 
 // Serve static files from FrontEnd directory (AFTER specific routes)
-app.use(express.static(path.join(__dirname, '../FrontEnd')));
+// Disable stale browser caching for HTML/CSS/JS so deployed updates apply on normal refresh.
+app.use(
+  express.static(path.join(__dirname, '../FrontEnd'), {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res, filePath) => {
+      const ext = path.extname(filePath).toLowerCase();
+
+      if (ext === '.html') {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      } else if (ext === '.js' || ext === '.css' || ext === '.json') {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      }
+    },
+  })
+);
 
 // Static Files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
