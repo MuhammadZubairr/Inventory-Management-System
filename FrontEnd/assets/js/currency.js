@@ -155,40 +155,47 @@ async function getExchangeRate() {
   await getExchangeRate();
 })();
 
-// Get user's preferred currency from localStorage
+// Get user's preferred currency from the stored user object.
 function getUserCurrency() {
-  const user = localStorage.getItem('user');
-  if (user) {
+  const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+
+  if (storedUser) {
     try {
-      const parsed = JSON.parse(user);
+      const parsed = JSON.parse(storedUser);
       return parsed.currency || 'PKR';
     } catch (e) {
       return 'PKR';
     }
   }
+
   return 'PKR';
 }
 
 // Update user's currency preference
 function setUserCurrency(currency) {
-  const user = localStorage.getItem('user');
-  if (user) {
+  const storedUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+
+  if (storedUser) {
     try {
-      const parsed = JSON.parse(user);
+      const parsed = JSON.parse(storedUser);
       parsed.currency = currency;
-      localStorage.setItem('user', JSON.stringify(parsed));
-      
+
+      const updatedUser = JSON.stringify(parsed);
+      sessionStorage.setItem('user', updatedUser);
+      localStorage.setItem('user', updatedUser);
+
       // Dispatch currency change event
-      window.dispatchEvent(new CustomEvent('currencyChanged', { 
-        detail: { currency } 
+      window.dispatchEvent(new CustomEvent('currencyChanged', {
+        detail: { currency }
       }));
-      
+
       return true;
     } catch (e) {
       console.error('Error setting currency:', e);
       return false;
     }
   }
+
   return false;
 }
 
