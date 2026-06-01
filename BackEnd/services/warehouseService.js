@@ -9,6 +9,29 @@ import ApiError from '../utils/ApiError.js';
  */
 
 class WarehouseService {
+  normalizeLocationInput(warehouseData) {
+    if (warehouseData.location && typeof warehouseData.location === 'object') {
+      return {
+        ...warehouseData,
+        location: {
+          country: 'USA',
+          ...warehouseData.location,
+        },
+      };
+    }
+
+    return {
+      ...warehouseData,
+      location: {
+        address: warehouseData.address,
+        city: warehouseData.city,
+        state: warehouseData.state,
+        country: warehouseData.country || 'USA',
+        zipCode: warehouseData.zipCode,
+      },
+    };
+  }
+
   /**
    * Get all warehouses with filtering, sorting, and pagination
    */
@@ -110,9 +133,11 @@ class WarehouseService {
    * Create new warehouse
    */
   async createWarehouse(warehouseData, userId) {
+    const normalizedWarehouseData = this.normalizeLocationInput(warehouseData);
+
     // Check if warehouse code already exists
     const existingWarehouse = await Warehouse.findOne({ 
-      code: warehouseData.code.toUpperCase() 
+      code: normalizedWarehouseData.code.toUpperCase() 
     });
 
     if (existingWarehouse) {
@@ -120,7 +145,7 @@ class WarehouseService {
     }
 
     const warehouse = new Warehouse({
-      ...warehouseData,
+      ...normalizedWarehouseData,
       createdBy: userId
     });
 
@@ -141,9 +166,11 @@ class WarehouseService {
     }
 
     // Check if updating code and if it already exists
-    if (updateData.code && updateData.code !== warehouse.code) {
+    const normalizedUpdateData = this.normalizeLocationInput(updateData);
+
+    if (normalizedUpdateData.code && normalizedUpdateData.code !== warehouse.code) {
       const existingWarehouse = await Warehouse.findOne({ 
-        code: updateData.code.toUpperCase(),
+        code: normalizedUpdateData.code.toUpperCase(),
         _id: { $ne: warehouseId }
       });
 
@@ -153,11 +180,11 @@ class WarehouseService {
     }
 
     // Update fields
-    Object.keys(updateData).forEach(key => {
-      if (key === 'location' && typeof updateData.location === 'object') {
-        warehouse.location = { ...warehouse.location, ...updateData.location };
+    Object.keys(normalizedUpdateData).forEach(key => {
+      if (key === 'location' && typeof normalizedUpdateData.location === 'object') {
+        warehouse.location = { ...warehouse.location, ...normalizedUpdateData.location };
       } else {
-        warehouse[key] = updateData[key];
+        warehouse[key] = normalizedUpdateData[key];
       }
     });
 

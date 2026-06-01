@@ -38,7 +38,12 @@ const createWarehouse = Joi.object({
       zipCode: Joi.string().required().messages({
         'any.required': 'Zip code is required'
       })
-    }).required(),
+    }),
+    address: Joi.string().allow('', null),
+    city: Joi.string().allow('', null),
+    state: Joi.string().allow('', null),
+    country: Joi.string().allow('', null),
+    zipCode: Joi.string().allow('', null),
     contactPerson: Joi.string().allow('', null),
     phone: Joi.string().required().messages({
       'any.required': 'Phone number is required'
@@ -50,6 +55,17 @@ const createWarehouse = Joi.object({
     status: Joi.string().valid('active', 'inactive', 'maintenance').default('active'),
     capacity: Joi.number().min(0).default(0),
     manager: Joi.string().allow('', null)
+  }).custom((value, helpers) => {
+    const hasNestedLocation = value.location && typeof value.location === 'object';
+    const hasFlatLocation = value.address && value.city && value.state && value.zipCode;
+
+    if (!hasNestedLocation && !hasFlatLocation) {
+      return helpers.error('any.custom');
+    }
+
+    return value;
+  }).messages({
+    'any.custom': 'Location details are required'
   })
 });
 
@@ -79,6 +95,11 @@ const updateWarehouse = Joi.object({
       country: Joi.string(),
       zipCode: Joi.string()
     }),
+    address: Joi.string().allow('', null),
+    city: Joi.string().allow('', null),
+    state: Joi.string().allow('', null),
+    country: Joi.string().allow('', null),
+    zipCode: Joi.string().allow('', null),
     contactPerson: Joi.string().allow('', null),
     phone: Joi.string(),
     email: Joi.string().email().messages({
@@ -87,7 +108,19 @@ const updateWarehouse = Joi.object({
     status: Joi.string().valid('active', 'inactive', 'maintenance'),
     capacity: Joi.number().min(0),
     manager: Joi.string().allow('', null)
-  }).min(1) // At least one field must be provided
+  }).custom((value, helpers) => {
+    const hasAnyNonLocationField = Object.keys(value).some((key) => !['address', 'city', 'state', 'country', 'zipCode'].includes(key));
+    const hasFlatLocationUpdate = ['address', 'city', 'state', 'country', 'zipCode'].some((field) => value[field] !== undefined && value[field] !== null && value[field] !== '');
+    const hasNestedLocationUpdate = value.location && typeof value.location === 'object' && Object.keys(value.location).length > 0;
+
+    if (!hasAnyNonLocationField && !hasFlatLocationUpdate && !hasNestedLocationUpdate) {
+      return helpers.error('any.custom');
+    }
+
+    return value;
+  }).messages({
+    'any.custom': 'At least one field must be provided'
+  })
 });
 
 // Query parameters validation
