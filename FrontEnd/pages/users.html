@@ -279,7 +279,16 @@
 
               <!-- Single warehouse — shown for Staff / Viewer -->
               <div class="mb-3" id="editSingleWarehouseSection">
-                <label for="editWarehouse" class="form-label">Assigned Warehouse *</label>
+                <!-- Currently assigned warehouse -->
+                <div class="mb-3" id="editCurrentSingleWarehouseDiv">
+                  <label class="form-label small fw-semibold text-muted">Assigned Warehouse</label>
+                  <div id="editCurrentSingleWarehouse" class="border rounded p-2 bg-light mb-2">
+                    <p class="text-muted small mb-0">No warehouse assigned</p>
+                  </div>
+                </div>
+
+                <!-- Assign warehouse dropdown -->
+                <label for="editWarehouse" class="form-label">Change Warehouse</label>
                 <select class="form-select" id="editWarehouse" name="warehouse">
                   <option value="">Select Warehouse</option>
                 </select>
@@ -287,8 +296,17 @@
 
               <!-- Multi-warehouse — shown for Manager -->
               <div class="mb-3" id="editMultiWarehouseSection" style="display:none;">
+                <!-- Currently assigned warehouses -->
+                <div class="mb-3" id="editCurrentMultiWarehouseDiv">
+                  <label class="form-label small fw-semibold text-muted">Assigned Warehouses</label>
+                  <div id="editCurrentMultiWarehouses" class="border rounded p-2 bg-light mb-2" style="max-height:150px;overflow-y:auto;">
+                    <p class="text-muted small mb-0">No warehouses assigned</p>
+                  </div>
+                </div>
+
+                <!-- Select warehouses checklist -->
                 <label class="form-label fw-semibold">
-                  Assigned Warehouses *
+                  Add Warehouses *
                   <span class="text-muted fw-normal small">(select one or more)</span>
                 </label>
                 <div id="editWarehouseChecklist" class="border rounded p-3 bg-light" style="max-height:200px;overflow-y:auto;">
@@ -345,6 +363,59 @@
               <button type="submit" class="btn btn-primary">Change Password</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- View User Details Modal -->
+    <div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title" id="viewUserModalLabel">User Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- User Basic Info -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h6 class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Basic Information</h6>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-muted">Name</label>
+                <p class="mb-0" id="viewName">-</p>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-muted">Email</label>
+                <p class="mb-0" id="viewEmail">-</p>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-muted">Role</label>
+                <p class="mb-0"><span class="badge bg-primary" id="viewRole">-</span></p>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold text-muted">Status</label>
+                <p class="mb-0"><span class="badge" id="viewStatus">-</span></p>
+              </div>
+            </div>
+
+            <hr>
+
+            <!-- Assigned Warehouses -->
+            <div class="row">
+              <div class="col-12">
+                <h6 class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Assigned Warehouses</h6>
+              </div>
+              <div class="col-12">
+                <div id="viewWarehousesList" class="list-group">
+                  <div class="text-muted small">Loading warehouses...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>

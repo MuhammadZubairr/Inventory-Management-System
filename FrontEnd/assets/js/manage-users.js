@@ -124,7 +124,7 @@ function displayUsers(users) {
   const filteredUsers = users.filter(user => user.role !== 'admin');
 
   if (!filteredUsers || filteredUsers.length === 0) {
-    usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+    usersTableBody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
     return;
   }
 
@@ -139,11 +139,16 @@ function displayUsers(users) {
       roleBadgeClass = 'secondary';
     }
     
-    const warehouse = user.warehouses && user.warehouses.length > 0
-      ? user.warehouses.map(wh => `${wh.code || ''} — ${wh.name || ''}`).join(', ')
+    // Calculate warehouse count
+    const warehouseCount = user.warehouses && user.warehouses.length > 0
+      ? user.warehouses.length
       : user.warehouse
-        ? `${user.warehouse.code || ''} — ${user.warehouse.name || ''}`
-        : '<span class="text-muted">N/A</span>';
+        ? 1
+        : 0;
+    const warehouseDisplay = warehouseCount > 0
+      ? `<span class="badge bg-light text-dark">${warehouseCount}</span>`
+      : '<span class="text-muted">N/A</span>';
+    
     const statusClass = user.status === 'active' ? 'success' : user.status === 'inactive' ? 'secondary' : 'warning';
     const statusText = user.status || 'active';
     
@@ -155,13 +160,16 @@ function displayUsers(users) {
         <td>${user.name}</td>
         <td>${user.email}</td>
         <td><span class="badge bg-${roleBadgeClass}">${roleDisplay}</span></td>
-        <td>${warehouse}</td>
+        <td>${warehouseDisplay}</td>
         <td>
           <span class="badge bg-${statusClass}">
             ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}
           </span>
         </td>
         <td>
+          <button class="btn btn-sm btn-outline-info me-1" onclick="showViewUserModal('${user._id}')" title="View Details">
+            <i class="bi bi-eye"></i> View
+          </button>
           <button class="btn btn-sm btn-outline-primary me-1" onclick="showEditModal('${user._id}')" title="Edit User">
             <i class="bi bi-pencil-square"></i> Edit
           </button>
@@ -248,12 +256,89 @@ async function loadWarehouses() {
   }
 }
 
+// Show View User Details Modal
+async function showViewUserModal(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user details');
+    }
+
+    const data = await response.json();
+    const user = data.data.user;
+
+    // Populate basic info fields
+    document.getElementById('viewName').textContent = user.name || 'N/A';
+    document.getElementById('viewEmail').textContent = user.email || 'N/A';
+    
+    // Populate role badge
+    const roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    const roleBadgeClass = user.role === 'manager' ? 'warning' : user.role === 'staff' ? 'info' : 'secondary';
+    document.getElementById('viewRole').innerHTML = `<span class="badge bg-${roleBadgeClass}">${roleDisplay}</span>`;
+    
+    // Populate status badge
+    const statusClass = user.status === 'active' ? 'success' : user.status === 'inactive' ? 'secondary' : 'warning';
+    const statusText = user.status || 'active';
+    document.getElementById('viewStatus').innerHTML = `<span class="badge bg-${statusClass}">${statusText.charAt(0).toUpperCase() + statusText.slice(1)}</span>`;
+
+    // Populate warehouse list
+    const warehousesList = document.getElementById('viewWarehousesList');
+    warehousesList.innerHTML = ''; // Clear previous content
+
+    const warehouses = user.warehouses && user.warehouses.length > 0 ? user.warehouses : user.warehouse ? [user.warehouse] : [];
+
+    if (warehouses.length === 0) {
+      warehousesList.innerHTML = '<p class="text-muted">No warehouses assigned</p>';
+    } else {
+      warehousesList.innerHTML = warehouses.map(wh => `
+        <div class="card mb-2">
+          <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="card-title mb-1">${wh.code || 'N/A'} — ${wh.name || 'N/A'}</h6>
+                ${wh.location ? `
+                  <small class="text-muted d-block">
+                    ${wh.location.address || ''} ${wh.location.city ? ', ' + wh.location.city : ''} ${wh.location.state ? ', ' + wh.location.state : ''} ${wh.location.zipCode || ''}
+                  </small>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Show modal
+    const viewUserModal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+    viewUserModal.show();
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    showAlert('Failed to load user details', 'danger');
+  }
+}
+
 // Toggle warehouse section based on selected role
 function handleRoleChange() {
   const role = document.getElementById('addRole')?.value;
   const singleSection = document.getElementById('singleWarehouseSection');
   const multiSection = document.getElementById('multiWarehouseSection');
   const singleSelect = document.getElementById('addWarehouse');
+
+  // Clear all selections
+  if (singleSelect) {
+    singleSelect.value = '';
+  }
+  document.querySelectorAll('#addWarehouseChecklist .wh-manager-cb').forEach(cb => {
+    cb.checked = false;
+  });
+  const selectAllCb = document.querySelector('#mwh_select_all');
+  if (selectAllCb) {
+    selectAllCb.checked = false;
+    selectAllCb.indeterminate = false;
+  }
 
   if (role === 'manager') {
     singleSection.style.display = 'none';
@@ -275,7 +360,7 @@ function handleRoleChange() {
 // Load warehouses for edit modal
 async function loadWarehousesForEdit() {
   try {
-    const response = await fetch(`${API_BASE_URL}/warehouses?limit=1000`, {
+    const response = await fetch(`${API_BASE_URL}/warehouses?limit=100`, {
       headers: getHeaders()
     });
 
@@ -324,6 +409,7 @@ async function loadWarehousesForEdit() {
               checklist.querySelectorAll('.wh-edit-manager-cb').forEach(cb => {
                 cb.checked = this.checked;
               });
+              refreshAssignedWarehousesDisplay();
             });
             checklist.querySelectorAll('.wh-edit-manager-cb').forEach(cb => {
               cb.addEventListener('change', function () {
@@ -332,6 +418,7 @@ async function loadWarehousesForEdit() {
                 const noneChecked = Array.from(allCbs).every(c => !c.checked);
                 selectAllCb.checked = allChecked;
                 selectAllCb.indeterminate = !allChecked && !noneChecked;
+                refreshAssignedWarehousesDisplay();
               });
             });
           }
@@ -344,12 +431,83 @@ async function loadWarehousesForEdit() {
   }
 }
 
+// Remove assigned warehouse from modal
+function removeAssignedWarehouse(whId, type) {
+  if (type === 'single') {
+    // For staff/viewer, just clear the display and clear the selection
+    const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
+    if (assignedDiv) {
+      assignedDiv.innerHTML = '<p class="text-muted small mb-0">No warehouse assigned</p>';
+    }
+    const warehouseSelect = document.getElementById('editWarehouse');
+    if (warehouseSelect) {
+      warehouseSelect.value = '';
+    }
+  } else if (type === 'multi') {
+    // For managers, uncheck the corresponding checkbox and update display
+    const checkbox = document.querySelector(`#${whId}`);
+    if (checkbox) {
+      checkbox.checked = false;
+      // Trigger update of select all checkbox
+      const selectAllCb = document.querySelector('#edit_mwh_select_all');
+      if (selectAllCb) {
+        const allCbs = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb');
+        const allChecked = Array.from(allCbs).every(c => c.checked);
+        const noneChecked = Array.from(allCbs).every(c => !c.checked);
+        selectAllCb.checked = allChecked;
+        selectAllCb.indeterminate = !allChecked && !noneChecked;
+      }
+      // Refresh assigned warehouses display
+      refreshAssignedWarehousesDisplay();
+    }
+  }
+}
+
+// Refresh assigned warehouses display for managers
+function refreshAssignedWarehousesDisplay() {
+  const checkedBoxes = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb:checked');
+  const assignedList = document.getElementById('editCurrentMultiWarehouses');
+  
+  if (assignedList) {
+    if (checkedBoxes.length === 0) {
+      assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
+    } else {
+      assignedList.innerHTML = Array.from(checkedBoxes).map(cb => {
+        const label = cb.nextElementSibling;
+        const warehouseText = label ? label.textContent.trim() : cb.value;
+        const whId = `edit_multi_${cb.value}`;
+        return `
+          <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
+            <div>${warehouseText}</div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${whId}', 'multi')">
+              <i class="bi bi-trash"></i> Remove
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
 // Toggle warehouse section based on selected role in edit modal
 function handleEditRoleChange(user = null) {
   const role = document.getElementById('editRole')?.value;
   const singleSection = document.getElementById('editSingleWarehouseSection');
   const multiSection = document.getElementById('editMultiWarehouseSection');
   const singleSelect = document.getElementById('editWarehouse');
+
+  // Clear all selections first
+  if (singleSelect) {
+    singleSelect.value = '';
+  }
+  document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb').forEach(cb => {
+    cb.checked = false;
+  });
+  const selectAllCb = document.querySelector('#edit_mwh_select_all');
+  if (selectAllCb) {
+    selectAllCb.checked = false;
+    selectAllCb.indeterminate = false;
+  }
 
   if (role === 'admin') {
     // Hide both sections for admin
@@ -362,19 +520,44 @@ function handleEditRoleChange(user = null) {
     if (multiSection) multiSection.style.display = 'block';
     if (singleSelect) singleSelect.removeAttribute('required');
 
-    // Pre-select user's current warehouses if provided
-    if (user && user.warehouses) {
+    // Display currently assigned warehouses for manager
+    if (user && user.warehouses && user.warehouses.length > 0) {
+      const assignedList = document.getElementById('editCurrentMultiWarehouses');
+      if (assignedList) {
+        assignedList.innerHTML = user.warehouses.map(wh => `
+          <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
+            <div>
+              <span class="fw-semibold">${wh.code}</span>
+              <span class="text-muted"> — ${wh.name}</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('edit_multi_${wh._id}', 'multi')">
+              <i class="bi bi-trash"></i> Remove
+            </button>
+          </div>
+        `).join('');
+      }
+
       const warehouseIds = user.warehouses.map(wh => wh._id || wh);
+      console.log('Pre-selecting warehouses for manager:', warehouseIds);
       document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb').forEach(cb => {
-        cb.checked = warehouseIds.includes(cb.value);
+        if (warehouseIds.includes(cb.value)) {
+          cb.checked = true;
+        }
       });
       // Update select all checkbox
-      const selectAllCb = document.querySelector('#edit_mwh_select_all');
-      if (selectAllCb) {
+      const selectAllCbForUpdate = document.querySelector('#edit_mwh_select_all');
+      if (selectAllCbForUpdate) {
         const allCbs = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb');
         const allChecked = Array.from(allCbs).every(c => c.checked);
-        selectAllCb.checked = allChecked;
-        selectAllCb.indeterminate = !allChecked && allCbs.length > 0 && Array.from(allCbs).some(c => c.checked);
+        const someChecked = Array.from(allCbs).some(c => c.checked);
+        selectAllCbForUpdate.checked = allChecked;
+        selectAllCbForUpdate.indeterminate = !allChecked && someChecked;
+      }
+    } else {
+      // No warehouses assigned
+      const assignedList = document.getElementById('editCurrentMultiWarehouses');
+      if (assignedList) {
+        assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
       }
     }
   } else {
@@ -383,16 +566,33 @@ function handleEditRoleChange(user = null) {
     if (multiSection) multiSection.style.display = 'none';
     if (singleSelect) singleSelect.setAttribute('required', 'required');
 
-    // Pre-select user's current warehouse if provided
+    // Display currently assigned warehouse for staff/viewer
     if (user && user.warehouse) {
       const warehouseId = user.warehouse._id || user.warehouse;
+      const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
+      if (assignedDiv) {
+        assignedDiv.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center p-2 bg-white border rounded">
+            <div>
+              <span class="fw-semibold">${user.warehouse.code}</span>
+              <span class="text-muted"> — ${user.warehouse.name}</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('edit_single_${warehouseId}', 'single')">
+              <i class="bi bi-trash"></i> Remove
+            </button>
+          </div>
+        `;
+      }
+      console.log('Pre-selecting warehouse for staff:', warehouseId);
       if (singleSelect) singleSelect.value = warehouseId;
+    } else {
+      // No warehouse assigned
+      const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
+      if (assignedDiv) {
+        assignedDiv.innerHTML = '<p class="text-muted small mb-0">No warehouse assigned</p>';
+      }
     }
 
-    // Uncheck all manager checkboxes
-    document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb').forEach(cb => {
-      cb.checked = false;
-    });
     const errEl = document.getElementById('editWarehouseError');
     if (errEl) errEl.style.display = 'none';
   }
@@ -565,13 +765,14 @@ async function handleEditUser(e) {
     if (errEl) errEl.style.display = 'none';
     userData.warehouses = checkedWarehouses;
   } else if (role !== 'admin') {
-    // Single warehouse for staff / viewer
+    // Single warehouse for staff / viewer (can be empty to unassign)
     const warehouse = formData.get('warehouse');
-    if (!warehouse || warehouse === '') {
-      showAlert('Please select a warehouse', 'danger');
-      return;
+    if (warehouse && warehouse !== '') {
+      userData.warehouse = warehouse.trim();
+    } else {
+      // Allow unassignment by sending null
+      userData.warehouse = null;
     }
-    userData.warehouse = warehouse.trim();
   }
 
   try {

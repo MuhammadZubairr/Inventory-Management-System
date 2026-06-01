@@ -73,7 +73,9 @@ class UserService {
    */
   async findById(userId) {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId)
+        .populate('warehouse', 'code name location')
+        .populate('warehouses', 'code name location');
       if (!user) {
         throw new ApiError(HTTP_STATUS.NOT_FOUND, 'User not found');
       }
@@ -146,7 +148,9 @@ class UserService {
         userId,
         { ...updateData, updatedAt: Date.now() },
         { new: true, runValidators: true }
-      );
+      )
+        .populate('warehouse', 'code name location')
+        .populate('warehouses', 'code name location');
 
       if (!user) {
         throw new ApiError(HTTP_STATUS.NOT_FOUND, 'User not found');
