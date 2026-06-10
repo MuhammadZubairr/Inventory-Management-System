@@ -665,15 +665,30 @@ async function handleEditRoleChange(user = null) {
 
     // Display currently assigned warehouse for staff/viewer
     if (user && user.warehouse) {
-      const resolved = await resolveWarehouse(user.warehouse);
-      const warehouseId = (resolved && (resolved._id || resolved)) || (user.warehouse._id || user.warehouse);
+      // Prefer using cached warehouses (populated by loadWarehousesForEdit). If not found, fall back to resolveWarehouse.
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
-      if (assignedDiv) {
-        const codeText = (resolved && (resolved.code || resolved._id)) || null;
-        const nameText = (resolved && resolved.name) || null;
+      const warehouseIdRaw = (user.warehouse && (user.warehouse._id || user.warehouse)) || user.warehouse;
+      const warehouseId = warehouseIdRaw ? String(warehouseIdRaw) : null;
 
+      let resolved = null;
+      if (warehouseId && cachedWarehouses && cachedWarehouses.length > 0) {
+        resolved = cachedWarehouses.find(w => String(w._id) === warehouseId) || null;
+      }
+
+      if (!resolved) {
+        // last-resort: try resolving via network (same behaviour as before)
+        try {
+          resolved = await resolveWarehouse(user.warehouse);
+        } catch (err) {
+          resolved = null;
+        }
+      }
+
+      const codeText = resolved && (resolved.code || resolved._id) || null;
+      const nameText = resolved && resolved.name || null;
+
+      if (assignedDiv) {
         if (!codeText && !nameText) {
-          // Data not resolved yet — show loading placeholder instead of a bare dash
           assignedDiv.innerHTML = '<p class="text-muted small mb-0">Loading warehouse…</p>';
         } else {
           assignedDiv.innerHTML = `
@@ -689,11 +704,30 @@ async function handleEditRoleChange(user = null) {
           `;
         }
       }
+
       console.log('Pre-selecting warehouse for staff:', warehouseId);
 
-      // Ensure the select option exists before setting value (handles production timing/network race)
-      if (singleSelect) {
-        await ensureSelectValue(singleSelect, warehouseId);
+      // Ensure the select option exists before setting value. If it doesn't, create one from resolved.
+      if (singleSelect && warehouseId) {
+        const optionExists = Array.from(singleSelect.options).some(o => String(o.value) === warehouseId);
+        if (optionExists) {
+          singleSelect.value = warehouseId;
+        } else if (resolved) {
+          // Add a best-effort option so the UI shows the assigned warehouse immediately
+          try {
+            const opt = document.createElement('option');
+            opt.value = warehouseId;
+            opt.text = `${resolved.code || warehouseId} - ${resolved.name || ''}`;
+            singleSelect.appendChild(opt);
+            singleSelect.value = warehouseId;
+          } catch (err) {
+            // Fallback to original ensureSelectValue (keeps previous retry behaviour)
+            await ensureSelectValue(singleSelect, warehouseId);
+          }
+        } else {
+          // last fallback: try the retry helper
+          await ensureSelectValue(singleSelect, warehouseId);
+        }
       }
     } else {
       // No warehouse assigned
