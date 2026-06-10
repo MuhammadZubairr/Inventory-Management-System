@@ -112,6 +112,31 @@ async function resolveWarehouse(wh) {
   return wh;
 }
 
+// Ensure a select gets a value only when an option with that value exists.
+// Retries a few times with short delays to handle network/dom update races (production).
+function ensureSelectValue(selectEl, value, attempts = 8, delayMs = 100) {
+  return new Promise(resolve => {
+    if (!selectEl) return resolve(false);
+
+    const trySet = (remaining) => {
+      const optionExists = Array.from(selectEl.options).some(o => String(o.value) === String(value));
+      if (optionExists) {
+        selectEl.value = value;
+        return resolve(true);
+      }
+
+      if (remaining <= 0) {
+        // no matching option found — leave it unset
+        return resolve(false);
+      }
+
+      setTimeout(() => trySet(remaining - 1), delayMs);
+    };
+
+    trySet(attempts);
+  });
+}
+
 // Load all users
 async function loadUsers() {
   try {
@@ -597,20 +622,32 @@ async function handleEditRoleChange(user = null) {
       const warehouseId = (resolved && (resolved._id || resolved)) || (user.warehouse._id || user.warehouse);
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
       if (assignedDiv) {
-        assignedDiv.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center p-2 bg-white border rounded">
-            <div>
-              <span class="fw-semibold">${(resolved && resolved.code) || ''}</span>
-              <span class="text-muted"> — ${(resolved && resolved.name) || ''}</span>
+        const codeText = (resolved && (resolved.code || resolved._id)) || null;
+        const nameText = (resolved && resolved.name) || null;
+
+        if (!codeText && !nameText) {
+          // Data not resolved yet — show loading placeholder instead of a bare dash
+          assignedDiv.innerHTML = '<p class="text-muted small mb-0">Loading warehouse…</p>';
+        } else {
+          assignedDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center p-2 bg-white border rounded">
+              <div>
+                <span class="fw-semibold">${codeText || ''}</span>
+                <span class="text-muted"> — ${nameText || ''}</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${warehouseId}', 'single')">
+                <i class="bi bi-trash"></i> Remove
+              </button>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${warehouseId}', 'single')">
-              <i class="bi bi-trash"></i> Remove
-            </button>
-          </div>
-        `;
+          `;
+        }
       }
       console.log('Pre-selecting warehouse for staff:', warehouseId);
-      if (singleSelect) singleSelect.value = warehouseId;
+
+      // Ensure the select option exists before setting value (handles production timing/network race)
+      if (singleSelect) {
+        await ensureSelectValue(singleSelect, warehouseId);
+      }
     } else {
       // No warehouse assigned
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
