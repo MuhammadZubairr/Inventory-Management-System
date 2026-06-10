@@ -594,24 +594,62 @@ async function handleEditRoleChange(user = null) {
 
     if (user && user.warehouses && user.warehouses.length > 0) {
       const assignedList = document.getElementById('editCurrentMultiWarehouses');
+
+      // Show loading state immediately — never show dashes
       if (assignedList) {
-        assignedList.innerHTML = user.warehouses.map(wh => `
-          <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
-            <div>
-              <span class="fw-semibold">${wh.code || ''}</span>
-              <span class="text-muted"> — ${wh.name || ''}</span>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${wh._id || wh}', 'multi')">
-              <i class="bi bi-trash"></i> Remove
-            </button>
-          </div>
-        `).join('');
+        assignedList.innerHTML = '<p class="text-muted small mb-0">Loading warehouses…</p>';
       }
 
-      const warehouseIds = user.warehouses.map(wh => wh._id || wh);
+      // Resolve all warehouse objects — handles bare IDs and partial objects with no name
+      const resolvedWarehouses = await Promise.all(
+        user.warehouses.map(async (wh) => {
+          // Already has name — use directly
+          if (wh && typeof wh === 'object' && wh.name) return wh;
+
+          // Get the raw ID
+          const rawId = typeof wh === 'string' ? wh : (wh._id || null);
+
+          // Try cache first
+          if (rawId && cachedWarehouses && cachedWarehouses.length > 0) {
+            const cached = cachedWarehouses.find(w => String(w._id) === String(rawId));
+            if (cached && cached.name) return cached;
+          }
+
+          // Fetch directly by ID as final fallback
+          if (rawId) {
+            const fetched = await fetchWarehouseById(rawId);
+            if (fetched) return fetched;
+          }
+
+          return wh; // return original if all else fails
+        })
+      );
+
+      // Render the assigned list with resolved names
+      if (assignedList) {
+        assignedList.innerHTML = resolvedWarehouses.map(wh => {
+          const whId = (wh && wh._id) || wh;
+          const codeText = (wh && wh.code) || '';
+          const nameText = (wh && wh.name) || '';
+          return `
+            <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
+              <div>
+                <span class="fw-semibold">${codeText}</span>
+                <span class="text-muted"> — ${nameText}</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${whId}', 'multi')">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Pre-check the checkboxes using resolved IDs
+      const warehouseIds = resolvedWarehouses.map(wh => String((wh && wh._id) || wh));
       console.log('Pre-selecting warehouses for manager:', warehouseIds);
       document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb').forEach(cb => {
-        if (warehouseIds.includes(cb.value)) {
+        if (warehouseIds.includes(String(cb.value))) {
           cb.checked = true;
         }
       });
