@@ -24,10 +24,14 @@ let currentEditId = null;
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   const isAuthenticated = await checkAuth();
-  if (!isAuthenticated) return;
+  console.log('[manage-users] isAuthenticated:', isAuthenticated);
+  console.log('[manage-users] API_BASE_URL:', window.API_BASE_URL);
+  if (!isAuthenticated) {
+    console.warn('[manage-users] not authenticated; aborting user load');
+    return;
+  }
 
   // Get DOM elements
-      cachedWarehouses = warehouses;
   usersTableBody = document.getElementById('usersTableBody');
   addUserForm = document.getElementById('addUserForm');
   editUserForm = document.getElementById('editUserForm');
@@ -36,8 +40,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   roleFilter = document.getElementById('roleFilter');
 
   // Load initial data
-  loadUsers();
-  loadWarehouses(); // Load warehouses for dropdown
+  try {
+    loadUsers();
+  } catch (e) {
+    console.error('Error calling loadUsers():', e);
+  }
+
+  try {
+    loadWarehouses(); // Load warehouses for dropdown
+  } catch (e) {
+    console.error('Error calling loadWarehouses():', e);
+  }
 
   // Role change → toggle warehouse section
   const addRoleSelect = document.getElementById('addRole');
@@ -107,10 +120,19 @@ async function fetchWarehouseById(id) {
 
 async function resolveWarehouse(wh) {
   if (!wh) return null;
+  const id = typeof wh === 'string' ? wh : (wh._id || wh);
+
+  // Try cached warehouses first
+  if (id && cachedWarehouses && cachedWarehouses.length > 0) {
+    const found = cachedWarehouses.find(w => String(w._id) === String(id));
+    if (found) return found;
+  }
+
   if (typeof wh === 'string') {
     return await fetchWarehouseById(wh);
   }
-  // It may be an ObjectId-like or populated object
+
+  // It may be a populated object already
   return wh;
 }
 
@@ -144,24 +166,43 @@ async function loadUsers() {
   try {
     const params = new URLSearchParams();
     params.append('limit', '100');
-    
+
     if (searchInput && searchInput.value) {
       params.append('search', searchInput.value);
     }
 
+    // Use AbortController to avoid hanging requests in production
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     const response = await fetch(`${API_BASE_URL}/users?${params.toString()}`, {
-      headers: getHeaders()
+      headers: getHeaders(),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new Error('Failed to fetch users');
+      // Try to surface server message if present
+      let errMsg = 'Failed to fetch users';
+      try {
+        const errJson = await response.json();
+        if (errJson && errJson.message) errMsg = errJson.message;
+      } catch (e) {}
+      throw new Error(errMsg);
     }
 
     const data = await response.json();
-    displayUsers(data.data.users);
+
+    // Accept multiple possible shapes: { data: { users: [...] } } or { users: [...] }
+    const usersArray = (data && data.data && data.data.users) || data.users || [];
+    displayUsers(usersArray);
   } catch (error) {
     console.error('Error loading users:', error);
     showAlert('Failed to load users', 'danger');
+    if (usersTableBody) {
+      usersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load users. Please refresh.</td></tr>';
+    }
   }
 }
 
@@ -242,6 +283,8 @@ async function loadWarehouses() {
 
     if (data.success && data.data && data.data.warehouses) {
       const warehouses = data.data.warehouses;
+      // cache for later lookup
+      cachedWarehouses = warehouses;
 
       // Single-select dropdown (Staff / Viewer)
       const warehouseSelect = document.getElementById('addWarehouse');
@@ -419,6 +462,8 @@ async function loadWarehousesForEdit() {
 
     if (data.success && data.data && data.data.warehouses) {
       const warehouses = data.data.warehouses;
+      // Cache for use in edit flows
+      cachedWarehouses = warehouses;
 
       // Single-select dropdown (Staff / Viewer)
       const warehouseSelect = document.getElementById('editWarehouse');
