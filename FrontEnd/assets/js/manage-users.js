@@ -90,6 +90,28 @@ function debounce(func, wait) {
   };
 }
 
+// Resolve warehouse object whether it's an id string or already-populated object
+async function fetchWarehouseById(id) {
+  try {
+    const resp = await fetch(`${API_BASE_URL}/warehouses/${id}`, { headers: getHeaders() });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    return json.data && json.data.warehouse ? json.data.warehouse : null;
+  } catch (err) {
+    console.error('Error fetching warehouse by id:', err);
+    return null;
+  }
+}
+
+async function resolveWarehouse(wh) {
+  if (!wh) return null;
+  if (typeof wh === 'string') {
+    return await fetchWarehouseById(wh);
+  }
+  // It may be an ObjectId-like or populated object
+  return wh;
+}
+
 // Load all users
 async function loadUsers() {
   try {
@@ -293,13 +315,15 @@ async function showViewUserModal(userId) {
     if (warehouses.length === 0) {
       warehousesList.innerHTML = '<p class="text-muted">No warehouses assigned</p>';
     } else {
-      warehousesList.innerHTML = warehouses.map(wh => `
+      // Resolve warehouses that may be ids
+      const resolved = await Promise.all(warehouses.map(w => resolveWarehouse(w)));
+      warehousesList.innerHTML = resolved.map(wh => `
         <div class="card mb-2">
           <div class="card-body py-2">
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <h6 class="card-title mb-1">${wh.code || 'N/A'} — ${wh.name || 'N/A'}</h6>
-                ${wh.location ? `
+                <h6 class="card-title mb-1">${(wh && (wh.code || wh._id)) || 'N/A'} — ${(wh && wh.name) || 'N/A'}</h6>
+                ${wh && wh.location ? `
                   <small class="text-muted d-block">
                     ${wh.location.address || ''} ${wh.location.city ? ', ' + wh.location.city : ''} ${wh.location.state ? ', ' + wh.location.state : ''} ${wh.location.zipCode || ''}
                   </small>
@@ -444,8 +468,8 @@ function removeAssignedWarehouse(whId, type) {
       warehouseSelect.value = '';
     }
   } else if (type === 'multi') {
-    // For managers, uncheck the corresponding checkbox and update display
-    const checkbox = document.querySelector(`#${whId}`);
+    // For managers, uncheck the corresponding checkbox (ids are 'edit_mwh_<id>') and update display
+    const checkbox = document.querySelector(`#edit_mwh_${whId}`);
     if (checkbox) {
       checkbox.checked = false;
       // Trigger update of select all checkbox
@@ -468,15 +492,15 @@ function refreshAssignedWarehousesDisplay() {
   const checkedBoxes = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb:checked');
   const assignedList = document.getElementById('editCurrentMultiWarehouses');
   
-  if (assignedList) {
-    if (checkedBoxes.length === 0) {
-      assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
-    } else {
-      assignedList.innerHTML = Array.from(checkedBoxes).map(cb => {
-        const label = cb.nextElementSibling;
-        const warehouseText = label ? label.textContent.trim() : cb.value;
-        const whId = `edit_multi_${cb.value}`;
-        return `
+      if (assignedList) {
+        if (checkedBoxes.length === 0) {
+          assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
+        } else {
+          assignedList.innerHTML = Array.from(checkedBoxes).map(cb => {
+            const label = cb.nextElementSibling;
+            const warehouseText = label ? label.textContent.trim() : cb.value;
+            const whId = cb.value;
+            return `
           <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
             <div>${warehouseText}</div>
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${whId}', 'multi')">
@@ -484,13 +508,13 @@ function refreshAssignedWarehousesDisplay() {
             </button>
           </div>
         `;
-      }).join('');
-    }
-  }
+          }).join('');
+        }
+      }
 }
 
 // Toggle warehouse section based on selected role in edit modal
-function handleEditRoleChange(user = null) {
+async function handleEditRoleChange(user = null) {
   const role = document.getElementById('editRole')?.value;
   const singleSection = document.getElementById('editSingleWarehouseSection');
   const multiSection = document.getElementById('editMultiWarehouseSection');
@@ -524,13 +548,14 @@ function handleEditRoleChange(user = null) {
     if (user && user.warehouses && user.warehouses.length > 0) {
       const assignedList = document.getElementById('editCurrentMultiWarehouses');
       if (assignedList) {
+        // Build the assigned list using warehouse ids (remove will reference the id)
         assignedList.innerHTML = user.warehouses.map(wh => `
           <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
             <div>
-              <span class="fw-semibold">${wh.code}</span>
-              <span class="text-muted"> — ${wh.name}</span>
+              <span class="fw-semibold">${wh.code || ''}</span>
+              <span class="text-muted"> — ${wh.name || ''}</span>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('edit_multi_${wh._id}', 'multi')">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${wh._id || wh}', 'multi')">
               <i class="bi bi-trash"></i> Remove
             </button>
           </div>
@@ -568,16 +593,17 @@ function handleEditRoleChange(user = null) {
 
     // Display currently assigned warehouse for staff/viewer
     if (user && user.warehouse) {
-      const warehouseId = user.warehouse._id || user.warehouse;
+      const resolved = await resolveWarehouse(user.warehouse);
+      const warehouseId = (resolved && (resolved._id || resolved)) || (user.warehouse._id || user.warehouse);
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
       if (assignedDiv) {
         assignedDiv.innerHTML = `
           <div class="d-flex justify-content-between align-items-center p-2 bg-white border rounded">
             <div>
-              <span class="fw-semibold">${user.warehouse.code}</span>
-              <span class="text-muted"> — ${user.warehouse.name}</span>
+              <span class="fw-semibold">${(resolved && resolved.code) || ''}</span>
+              <span class="text-muted"> — ${(resolved && resolved.name) || ''}</span>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('edit_single_${warehouseId}', 'single')">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${warehouseId}', 'single')">
               <i class="bi bi-trash"></i> Remove
             </button>
           </div>
@@ -720,7 +746,7 @@ async function showEditModal(userId) {
     document.getElementById('editIsActive').value = (user.status === 'active').toString();
 
     // Handle warehouse selections based on role
-    handleEditRoleChange(user);
+    await handleEditRoleChange(user);
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
@@ -924,13 +950,25 @@ function showAlert(message, type = 'info') {
 async function handleLogout() {
   try {
     await fetch(`${API_BASE_URL}/auth/logout`, {
-      method: 'Post',
+      method: 'POST',
       headers: getHeaders()
     });
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    localStorage.clear();
+    // Clear all client-side storage that may hold auth state
+    try { sessionStorage.clear(); } catch (e) {}
+    try { localStorage.clear(); } catch (e) {}
+
+    // Clear auth cookie if it exists (best-effort)
+    document.cookie.split(';').forEach(function(c) {
+      const name = c.split('=')[0].trim();
+      if (name.toLowerCase().includes('token') || name.toLowerCase().includes('auth')) {
+        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
+      }
+    });
+
+    // Hard redirect to login to avoid rehydration race
     window.location.href = 'login.html';
   }
 }
