@@ -13,6 +13,7 @@ const getHeaders = () => ({
 let usersTableBody;
 let addUserModal;
 let editUserModal;
+let cachedWarehouses = [];
 let changePasswordModal;
 let addUserForm;
 let editUserForm;
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!isAuthenticated) return;
 
   // Get DOM elements
+      cachedWarehouses = warehouses;
   usersTableBody = document.getElementById('usersTableBody');
   addUserForm = document.getElementById('addUserForm');
   editUserForm = document.getElementById('editUserForm');
