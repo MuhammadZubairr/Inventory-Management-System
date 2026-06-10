@@ -105,7 +105,7 @@ function debounce(func, wait) {
   };
 }
 
-// Resolve warehouse object whether it's an id string or already-populated object
+// Fetch warehouse by ID directly from API
 async function fetchWarehouseById(id) {
   try {
     const resp = await fetch(`${API_BASE_URL}/warehouses/${id}`, { headers: getHeaders() });
@@ -118,22 +118,25 @@ async function fetchWarehouseById(id) {
   }
 }
 
+// FIXED: resolveWarehouse — always fetches if resolved object has no name
 async function resolveWarehouse(wh) {
   if (!wh) return null;
-  const id = typeof wh === 'string' ? wh : (wh._id || wh);
 
-  // Try cached warehouses first
+  const id = typeof wh === 'string' ? wh : (wh._id || null);
+
+  // Try cache first — only use cached entry if it has a name
   if (id && cachedWarehouses && cachedWarehouses.length > 0) {
     const found = cachedWarehouses.find(w => String(w._id) === String(id));
-    if (found) return found;
+    if (found && found.name) return found;
   }
 
-  if (typeof wh === 'string') {
-    return await fetchWarehouseById(wh);
-  }
+  // If wh is already a fully populated object with a name, use it directly
+  if (typeof wh === 'object' && wh.name) return wh;
 
-  // It may be a populated object already
-  return wh;
+  // Otherwise fetch by ID — handles bare string IDs and partial objects with no name
+  if (id) return await fetchWarehouseById(id);
+
+  return null;
 }
 
 // Ensure a select gets a value only when an option with that value exists.
@@ -150,7 +153,6 @@ function ensureSelectValue(selectEl, value, attempts = 8, delayMs = 100) {
       }
 
       if (remaining <= 0) {
-        // no matching option found — leave it unset
         return resolve(false);
       }
 
@@ -183,7 +185,6 @@ async function loadUsers() {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // Try to surface server message if present
       let errMsg = 'Failed to fetch users';
       try {
         const errJson = await response.json();
@@ -219,7 +220,6 @@ function displayUsers(users) {
   }
 
   usersTableBody.innerHTML = filteredUsers.map(user => {
-    // Set badge color based on role
     let roleBadgeClass = 'secondary';
     if (user.role === 'manager') {
       roleBadgeClass = 'warning';
@@ -228,8 +228,7 @@ function displayUsers(users) {
     } else if (user.role === 'viewer') {
       roleBadgeClass = 'secondary';
     }
-    
-    // Calculate warehouse count
+
     const warehouseCount = user.warehouses && user.warehouses.length > 0
       ? user.warehouses.length
       : user.warehouse
@@ -238,13 +237,11 @@ function displayUsers(users) {
     const warehouseDisplay = warehouseCount > 0
       ? `<span class="badge bg-light text-dark">${warehouseCount}</span>`
       : '<span class="text-muted">N/A</span>';
-    
+
     const statusClass = user.status === 'active' ? 'success' : user.status === 'inactive' ? 'secondary' : 'warning';
     const statusText = user.status || 'active';
-    
-    // Capitalize role for display
     const roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-    
+
     return `
       <tr>
         <td>${user.name}</td>
@@ -283,10 +280,8 @@ async function loadWarehouses() {
 
     if (data.success && data.data && data.data.warehouses) {
       const warehouses = data.data.warehouses;
-      // cache for later lookup
       cachedWarehouses = warehouses;
 
-      // Single-select dropdown (Staff / Viewer)
       const warehouseSelect = document.getElementById('addWarehouse');
       if (warehouseSelect) {
         warehouseSelect.innerHTML = warehouses.length === 0
@@ -297,7 +292,6 @@ async function loadWarehouses() {
             ).join('');
       }
 
-      // Checklist (Manager)
       const checklist = document.getElementById('addWarehouseChecklist');
       if (checklist) {
         if (warehouses.length === 0) {
@@ -319,7 +313,6 @@ async function loadWarehouses() {
             </div>
           `).join('');
 
-          // Bind Select All
           const selectAllCb = checklist.querySelector('#mwh_select_all');
           if (selectAllCb) {
             selectAllCb.addEventListener('change', function () {
@@ -362,30 +355,25 @@ async function showViewUserModal(userId) {
     const data = await response.json();
     const user = data.data.user;
 
-    // Populate basic info fields
     document.getElementById('viewName').textContent = user.name || 'N/A';
     document.getElementById('viewEmail').textContent = user.email || 'N/A';
-    
-    // Populate role badge
+
     const roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
     const roleBadgeClass = user.role === 'manager' ? 'warning' : user.role === 'staff' ? 'info' : 'secondary';
     document.getElementById('viewRole').innerHTML = `<span class="badge bg-${roleBadgeClass}">${roleDisplay}</span>`;
-    
-    // Populate status badge
+
     const statusClass = user.status === 'active' ? 'success' : user.status === 'inactive' ? 'secondary' : 'warning';
     const statusText = user.status || 'active';
     document.getElementById('viewStatus').innerHTML = `<span class="badge bg-${statusClass}">${statusText.charAt(0).toUpperCase() + statusText.slice(1)}</span>`;
 
-    // Populate warehouse list
     const warehousesList = document.getElementById('viewWarehousesList');
-    warehousesList.innerHTML = ''; // Clear previous content
+    warehousesList.innerHTML = '';
 
     const warehouses = user.warehouses && user.warehouses.length > 0 ? user.warehouses : user.warehouse ? [user.warehouse] : [];
 
     if (warehouses.length === 0) {
       warehousesList.innerHTML = '<p class="text-muted">No warehouses assigned</p>';
     } else {
-      // Resolve warehouses that may be ids
       const resolved = await Promise.all(warehouses.map(w => resolveWarehouse(w)));
       warehousesList.innerHTML = resolved.map(wh => `
         <div class="card mb-2">
@@ -405,7 +393,6 @@ async function showViewUserModal(userId) {
       `).join('');
     }
 
-    // Show modal
     const viewUserModal = new bootstrap.Modal(document.getElementById('viewUserModal'));
     viewUserModal.show();
   } catch (error) {
@@ -421,7 +408,6 @@ function handleRoleChange() {
   const multiSection = document.getElementById('multiWarehouseSection');
   const singleSelect = document.getElementById('addWarehouse');
 
-  // Clear all selections
   if (singleSelect) {
     singleSelect.value = '';
   }
@@ -442,7 +428,6 @@ function handleRoleChange() {
     singleSection.style.display = 'block';
     multiSection.style.display = 'none';
     singleSelect.setAttribute('required', 'required');
-    // Uncheck all manager checkboxes
     document.querySelectorAll('#addWarehouseChecklist .wh-manager-cb').forEach(cb => {
       cb.checked = false;
     });
@@ -462,10 +447,8 @@ async function loadWarehousesForEdit() {
 
     if (data.success && data.data && data.data.warehouses) {
       const warehouses = data.data.warehouses;
-      // Cache for use in edit flows
       cachedWarehouses = warehouses;
 
-      // Single-select dropdown (Staff / Viewer)
       const warehouseSelect = document.getElementById('editWarehouse');
       if (warehouseSelect) {
         warehouseSelect.innerHTML = warehouses.length === 0
@@ -476,7 +459,6 @@ async function loadWarehousesForEdit() {
             ).join('');
       }
 
-      // Checklist (Manager)
       const checklist = document.getElementById('editWarehouseChecklist');
       if (checklist) {
         if (warehouses.length === 0) {
@@ -498,7 +480,6 @@ async function loadWarehousesForEdit() {
             </div>
           `).join('');
 
-          // Bind Select All
           const selectAllCb = checklist.querySelector('#edit_mwh_select_all');
           if (selectAllCb) {
             selectAllCb.addEventListener('change', function () {
@@ -530,7 +511,6 @@ async function loadWarehousesForEdit() {
 // Remove assigned warehouse from modal
 function removeAssignedWarehouse(whId, type) {
   if (type === 'single') {
-    // For staff/viewer, just clear the display and clear the selection
     const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
     if (assignedDiv) {
       assignedDiv.innerHTML = '<p class="text-muted small mb-0">No warehouse assigned</p>';
@@ -540,11 +520,9 @@ function removeAssignedWarehouse(whId, type) {
       warehouseSelect.value = '';
     }
   } else if (type === 'multi') {
-    // For managers, uncheck the corresponding checkbox (ids are 'edit_mwh_<id>') and update display
     const checkbox = document.querySelector(`#edit_mwh_${whId}`);
     if (checkbox) {
       checkbox.checked = false;
-      // Trigger update of select all checkbox
       const selectAllCb = document.querySelector('#edit_mwh_select_all');
       if (selectAllCb) {
         const allCbs = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb');
@@ -553,7 +531,6 @@ function removeAssignedWarehouse(whId, type) {
         selectAllCb.checked = allChecked;
         selectAllCb.indeterminate = !allChecked && !noneChecked;
       }
-      // Refresh assigned warehouses display
       refreshAssignedWarehousesDisplay();
     }
   }
@@ -563,16 +540,16 @@ function removeAssignedWarehouse(whId, type) {
 function refreshAssignedWarehousesDisplay() {
   const checkedBoxes = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb:checked');
   const assignedList = document.getElementById('editCurrentMultiWarehouses');
-  
-      if (assignedList) {
-        if (checkedBoxes.length === 0) {
-          assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
-        } else {
-          assignedList.innerHTML = Array.from(checkedBoxes).map(cb => {
-            const label = cb.nextElementSibling;
-            const warehouseText = label ? label.textContent.trim() : cb.value;
-            const whId = cb.value;
-            return `
+
+  if (assignedList) {
+    if (checkedBoxes.length === 0) {
+      assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
+    } else {
+      assignedList.innerHTML = Array.from(checkedBoxes).map(cb => {
+        const label = cb.nextElementSibling;
+        const warehouseText = label ? label.textContent.trim() : cb.value;
+        const whId = cb.value;
+        return `
           <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
             <div>${warehouseText}</div>
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${whId}', 'multi')">
@@ -580,9 +557,9 @@ function refreshAssignedWarehousesDisplay() {
             </button>
           </div>
         `;
-          }).join('');
-        }
-      }
+      }).join('');
+    }
+  }
 }
 
 // Toggle warehouse section based on selected role in edit modal
@@ -606,21 +583,18 @@ async function handleEditRoleChange(user = null) {
   }
 
   if (role === 'admin') {
-    // Hide both sections for admin
     if (singleSection) singleSection.style.display = 'none';
     if (multiSection) multiSection.style.display = 'none';
     if (singleSelect) singleSelect.removeAttribute('required');
+
   } else if (role === 'manager') {
-    // Show multi-select for manager
     if (singleSection) singleSection.style.display = 'none';
     if (multiSection) multiSection.style.display = 'block';
     if (singleSelect) singleSelect.removeAttribute('required');
 
-    // Display currently assigned warehouses for manager
     if (user && user.warehouses && user.warehouses.length > 0) {
       const assignedList = document.getElementById('editCurrentMultiWarehouses');
       if (assignedList) {
-        // Build the assigned list using warehouse ids (remove will reference the id)
         assignedList.innerHTML = user.warehouses.map(wh => `
           <div class="d-flex justify-content-between align-items-center p-2 mb-1 bg-white border rounded">
             <div>
@@ -641,7 +615,6 @@ async function handleEditRoleChange(user = null) {
           cb.checked = true;
         }
       });
-      // Update select all checkbox
       const selectAllCbForUpdate = document.querySelector('#edit_mwh_select_all');
       if (selectAllCbForUpdate) {
         const allCbs = document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb');
@@ -651,53 +624,58 @@ async function handleEditRoleChange(user = null) {
         selectAllCbForUpdate.indeterminate = !allChecked && someChecked;
       }
     } else {
-      // No warehouses assigned
       const assignedList = document.getElementById('editCurrentMultiWarehouses');
       if (assignedList) {
         assignedList.innerHTML = '<p class="text-muted small mb-0">No warehouses assigned</p>';
       }
     }
+
   } else {
-    // Show single-select for staff/viewer
+    // FIXED: Show single-select for staff/viewer
     if (singleSection) singleSection.style.display = 'block';
     if (multiSection) multiSection.style.display = 'none';
     if (singleSelect) singleSelect.setAttribute('required', 'required');
 
-    // Display currently assigned warehouse for staff/viewer
     if (user && user.warehouse) {
-      // Prefer using cached warehouses (populated by loadWarehousesForEdit). If not found, fall back to resolveWarehouse.
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
-      const warehouseIdRaw = (user.warehouse && (user.warehouse._id || user.warehouse)) || user.warehouse;
-      const warehouseId = warehouseIdRaw ? String(warehouseIdRaw) : null;
 
-      let resolved = null;
-      if (warehouseId && cachedWarehouses && cachedWarehouses.length > 0) {
-        resolved = cachedWarehouses.find(w => String(w._id) === warehouseId) || null;
+      // Show loading state immediately — never leave it blank
+      if (assignedDiv) {
+        assignedDiv.innerHTML = '<p class="text-muted small mb-0">Loading warehouse…</p>';
       }
 
-      if (!resolved) {
-        // last-resort: try resolving via network (same behaviour as before)
-        try {
-          resolved = await resolveWarehouse(user.warehouse);
-        } catch (err) {
-          resolved = null;
+      // Step 1: try to resolve from cache / populated object
+      let resolved = await resolveWarehouse(user.warehouse);
+
+      // Step 2: if still no code/name, fetch directly by ID (handles bare-ID case on production)
+      if (!resolved || (!resolved.code && !resolved.name)) {
+        const rawId = typeof user.warehouse === 'string'
+          ? user.warehouse
+          : (user.warehouse._id || user.warehouse);
+        if (rawId) {
+          resolved = await fetchWarehouseById(rawId);
         }
       }
 
-      const codeText = resolved && (resolved.code || resolved._id) || null;
-      const nameText = resolved && resolved.name || null;
+      const warehouseId = (resolved && resolved._id)
+        || (typeof user.warehouse === 'string' ? user.warehouse : (user.warehouse._id || ''));
 
+      // Step 3: render the display card with the resolved data
       if (assignedDiv) {
+        const codeText = resolved && resolved.code ? resolved.code : '';
+        const nameText = resolved && resolved.name ? resolved.name : '';
+
         if (!codeText && !nameText) {
-          assignedDiv.innerHTML = '<p class="text-muted small mb-0">Loading warehouse…</p>';
+          assignedDiv.innerHTML = '<p class="text-muted small mb-0">No warehouse assigned</p>';
         } else {
           assignedDiv.innerHTML = `
             <div class="d-flex justify-content-between align-items-center p-2 bg-white border rounded">
               <div>
-                <span class="fw-semibold">${codeText || ''}</span>
-                <span class="text-muted"> — ${nameText || ''}</span>
+                <span class="fw-semibold">${codeText}</span>
+                <span class="text-muted"> — ${nameText}</span>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAssignedWarehouse('${warehouseId}', 'single')">
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                onclick="removeAssignedWarehouse('${warehouseId}', 'single')">
                 <i class="bi bi-trash"></i> Remove
               </button>
             </div>
@@ -707,30 +685,12 @@ async function handleEditRoleChange(user = null) {
 
       console.log('Pre-selecting warehouse for staff:', warehouseId);
 
-      // Ensure the select option exists before setting value. If it doesn't, create one from resolved.
+      // Step 4: set the dropdown select value (with retry for production timing)
       if (singleSelect && warehouseId) {
-        const optionExists = Array.from(singleSelect.options).some(o => String(o.value) === warehouseId);
-        if (optionExists) {
-          singleSelect.value = warehouseId;
-        } else if (resolved) {
-          // Add a best-effort option so the UI shows the assigned warehouse immediately
-          try {
-            const opt = document.createElement('option');
-            opt.value = warehouseId;
-            opt.text = `${resolved.code || warehouseId} - ${resolved.name || ''}`;
-            singleSelect.appendChild(opt);
-            singleSelect.value = warehouseId;
-          } catch (err) {
-            // Fallback to original ensureSelectValue (keeps previous retry behaviour)
-            await ensureSelectValue(singleSelect, warehouseId);
-          }
-        } else {
-          // last fallback: try the retry helper
-          await ensureSelectValue(singleSelect, warehouseId);
-        }
+        await ensureSelectValue(singleSelect, warehouseId);
       }
+
     } else {
-      // No warehouse assigned
       const assignedDiv = document.getElementById('editCurrentSingleWarehouse');
       if (assignedDiv) {
         assignedDiv.innerHTML = '<p class="text-muted small mb-0">No warehouse assigned</p>';
@@ -758,7 +718,6 @@ async function handleAddUser(e) {
   const formData = new FormData(addUserForm);
   const role = formData.get('role');
 
-  // Validate role selection
   if (!role || role === '') {
     showAlert('Please select a user role', 'danger');
     return;
@@ -772,7 +731,6 @@ async function handleAddUser(e) {
     status: formData.get('isActive') === 'true' ? 'active' : 'inactive',
   };
 
-  // Validate password confirmation
   const confirmPassword = formData.get('confirmPassword');
   if (userData.password !== confirmPassword) {
     showAlert('Passwords do not match', 'danger');
@@ -780,7 +738,6 @@ async function handleAddUser(e) {
   }
 
   if (role === 'manager') {
-    // Collect all checked warehouses
     const checkedWarehouses = [];
     document.querySelectorAll('#addWarehouseChecklist .wh-manager-cb:checked').forEach(cb => {
       checkedWarehouses.push(cb.value);
@@ -797,7 +754,6 @@ async function handleAddUser(e) {
     if (errEl) errEl.style.display = 'none';
     userData.warehouses = checkedWarehouses;
   } else {
-    // Single warehouse for staff / viewer
     const warehouse = formData.get('warehouse');
     if (!warehouse || warehouse === '') {
       showAlert('Please select a warehouse', 'danger');
@@ -824,9 +780,8 @@ async function handleAddUser(e) {
 
     showAlert('User added successfully', 'success');
     addUserForm.reset();
-    handleRoleChange(); // reset warehouse section UI
+    handleRoleChange();
 
-    // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
     if (modal) modal.hide();
 
@@ -860,7 +815,6 @@ async function showEditModal(userId) {
     document.getElementById('editName').value = user.name;
     document.getElementById('editEmail').value = user.email;
     document.getElementById('editRole').value = user.role;
-    // Convert status to isActive format for the form (active = true, inactive = false)
     document.getElementById('editIsActive').value = (user.status === 'active').toString();
 
     // Handle warehouse selections based on role
@@ -890,9 +844,7 @@ async function handleEditUser(e) {
     status: formData.get('isActive') === 'true' ? 'active' : 'inactive'
   };
 
-  // Handle warehouse assignment based on role
   if (role === 'manager') {
-    // Collect all checked warehouses
     const checkedWarehouses = [];
     document.querySelectorAll('#editWarehouseChecklist .wh-edit-manager-cb:checked').forEach(cb => {
       checkedWarehouses.push(cb.value);
@@ -909,12 +861,10 @@ async function handleEditUser(e) {
     if (errEl) errEl.style.display = 'none';
     userData.warehouses = checkedWarehouses;
   } else if (role !== 'admin') {
-    // Single warehouse for staff / viewer (can be empty to unassign)
     const warehouse = formData.get('warehouse');
     if (warehouse && warehouse !== '') {
       userData.warehouse = warehouse.trim();
     } else {
-      // Allow unassignment by sending null
       userData.warehouse = null;
     }
   }
@@ -933,11 +883,10 @@ async function handleEditUser(e) {
     }
 
     showAlert('User updated successfully', 'success');
-    
-    // Close modal
+
     const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
     if (modal) modal.hide();
-    
+
     currentEditId = null;
     loadUsers();
   } catch (error) {
@@ -998,11 +947,11 @@ async function deleteUser(userId) {
 // Show change password modal
 function showChangePasswordModal(userId) {
   currentEditId = userId;
-  
+
   if (changePasswordForm) {
     changePasswordForm.reset();
   }
-  
+
   const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
   modal.show();
 }
@@ -1038,8 +987,7 @@ async function handleChangePassword(e) {
 
     showAlert('Password changed successfully', 'success');
     changePasswordForm.reset();
-    
-    // Close modal
+
     const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
     if (modal) modal.hide();
   } catch (error) {
@@ -1074,11 +1022,9 @@ async function handleLogout() {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    // Clear all client-side storage that may hold auth state
     try { sessionStorage.clear(); } catch (e) {}
     try { localStorage.clear(); } catch (e) {}
 
-    // Clear auth cookie if it exists (best-effort)
     document.cookie.split(';').forEach(function(c) {
       const name = c.split('=')[0].trim();
       if (name.toLowerCase().includes('token') || name.toLowerCase().includes('auth')) {
@@ -1086,7 +1032,6 @@ async function handleLogout() {
       }
     });
 
-    // Hard redirect to login to avoid rehydration race
     window.location.href = 'login.html';
   }
 }
