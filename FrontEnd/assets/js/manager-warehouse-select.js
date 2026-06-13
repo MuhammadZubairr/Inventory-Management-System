@@ -1,7 +1,7 @@
 /**
  * Manager Warehouse Selection
  * Displays all warehouses the logged-in manager can access.
- * Clicking a warehouse stores it in localStorage and enters the dashboard.
+ * Clicking a warehouse stores it in sessionStorage and enters the dashboard.
  */
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -18,26 +18,23 @@ function getHeaders() {
 }
 
 function handleLogout() {
-  // Clear per-tab session storage
   sessionStorage.clear();
   window.location.href = '/pages/login.html';
 }
 
-// Make handleLogout available globally (called from inline HTML onclick)
 window.handleLogout = handleLogout;
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
 function showState(state) {
-  // state: 'loading' | 'error' | 'empty' | 'grid'
-  document.getElementById('loadingState').style.display  = state === 'loading' ? 'block' : 'none';
+  document.getElementById('loadingState').style.display = state === 'loading' ? 'block' : 'none';
   document.getElementById('errorState').style.display   = state === 'error'   ? 'block' : 'none';
   document.getElementById('emptyState').style.display   = state === 'empty'   ? 'block' : 'none';
 
   const grid = document.getElementById('warehouseGrid');
   if (state === 'grid') {
-    grid.style.removeProperty('display'); // remove the inline display:none
-    grid.style.display = 'flex';          // Bootstrap row needs to be flex
+    grid.style.removeProperty('display');
+    grid.style.display = 'flex';
     grid.classList.add('d-flex');
   } else {
     grid.style.display = 'none';
@@ -52,10 +49,10 @@ function setErrorMessage(msg) {
 
 function statusBadge(status) {
   const map = {
-    active:      { cls: 'bg-success',   label: 'Active'      },
-    inactive:    { cls: 'bg-secondary', label: 'Inactive'    },
-    maintenance: { cls: 'bg-warning text-dark', label: 'Maintenance' },
-    full:        { cls: 'bg-danger',    label: 'Full'        },
+    active:      { cls: 'bg-success',           label: 'Active'      },
+    inactive:    { cls: 'bg-secondary',          label: 'Inactive'    },
+    maintenance: { cls: 'bg-warning text-dark',  label: 'Maintenance' },
+    full:        { cls: 'bg-danger',             label: 'Full'        },
   };
   const s = map[status] || { cls: 'bg-secondary', label: status || 'Unknown' };
   return `<span class="badge badge-status ${s.cls}">${s.label}</span>`;
@@ -67,14 +64,13 @@ function renderWarehouses(warehouses) {
   const grid = document.getElementById('warehouseGrid');
   grid.innerHTML = '';
 
-  warehouses.forEach((wh, idx) => {
+  warehouses.forEach((wh) => {
     const id       = wh._id   || wh.id   || wh;
     const name     = wh.name  || 'Warehouse';
     const code     = wh.code  || '';
     const location = wh.location || '';
     const status   = wh.status   || 'active';
 
-    // Column sizing: up to 4 across on large screens, 2 on md, 1 on small
     const col = document.createElement('div');
     col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
 
@@ -102,7 +98,6 @@ function renderWarehouses(warehouses) {
       </div>
     `;
 
-    // Click handler
     const card = col.querySelector('.warehouse-card');
     card.addEventListener('click', () => selectWarehouse(wh));
     card.addEventListener('keydown', (e) => {
@@ -126,51 +121,28 @@ function selectWarehouse(wh) {
   sessionStorage.setItem('warehouseName', name);
   sessionStorage.setItem('warehouseCode', code);
 
-  // Navigate into the warehouse dashboard
   window.location.href = '/pages/user-dashboard.html';
 }
 
-// ─── Load warehouses ──────────────────────────────────────────────────────────
-
-async function loadWarehouses() {
-  showState('loading');
-
-  // Try localStorage first (populated at login time)
-  const cached = sessionStorage.getItem('managerWarehouses');
-  if (cached) {
-    try {
-      const warehouses = JSON.parse(cached);
-      if (Array.isArray(warehouses) && warehouses.length > 0) {
-        // If objects only have IDs, fetch full details from the API
-        if (typeof warehouses[0] === 'string' || !warehouses[0].name) {
-          await fetchWarehouseDetails(warehouses.map(w => w._id || w.id || w));
-        } else {
-          renderWarehouses(warehouses);
-        }
-        return;
-      }
-    } catch (_) { /* fall through to API */ }
-  }
-
-  // Fallback: fetch from API
-  await fetchAllManagerWarehouses();
-}
+// ─── Resolve warehouse IDs to full objects ────────────────────────────────────
 
 async function fetchWarehouseDetails(ids) {
   try {
-    // Fetch each warehouse detail in parallel
     const results = await Promise.all(
       ids.map(id =>
         fetch(`${window.API_BASE_URL}/warehouses/${id}`, { headers: getHeaders() })
           .then(r => (r.ok ? r.json() : null))
-          .then(d => (d && d.data ? d.data : null))
+          .then(d => {
+            // Handle both { data: { warehouse: {...} } } and { data: {...} }
+            if (!d) return null;
+            return d.data?.warehouse || d.data || null;
+          })
       )
     );
     const valid = results.filter(Boolean);
     if (valid.length === 0) {
       showState('empty');
     } else {
-      // Cache enriched data
       sessionStorage.setItem('managerWarehouses', JSON.stringify(valid));
       renderWarehouses(valid);
     }
@@ -180,6 +152,10 @@ async function fetchWarehouseDetails(ids) {
     showState('error');
   }
 }
+
+// ─── FIX: Always fetch fresh warehouse list from API ─────────────────────────
+// Never rely on sessionStorage cache for warehouse list — admin may have
+// changed assignments since last login. Always call /auth/me fresh.
 
 async function fetchAllManagerWarehouses() {
   try {
@@ -196,21 +172,65 @@ async function fetchAllManagerWarehouses() {
     }
 
     const data = await response.json();
-    const user = data.data || data.user || data;
-    const warehouses = user.warehouses || [];
+
+    // Handle multiple possible response shapes from /auth/me
+    const user = data.data?.user || data.data || data.user || data;
+
+    // FIX: Check BOTH warehouses (array, for manager) AND warehouse (singular,
+    // set as primary). The backend may populate one or both depending on version.
+    let warehouses = [];
+
+    if (user.warehouses && Array.isArray(user.warehouses) && user.warehouses.length > 0) {
+      // Use the full array — this is the correct field for managers
+      warehouses = user.warehouses;
+    } else if (user.warehouse) {
+      // Fallback: singular field — wrap in array so UI still works
+      warehouses = [user.warehouse];
+    }
 
     if (warehouses.length === 0) {
+      console.warn('[WarehouseSelect] No warehouses found on user object:', user);
       showState('empty');
       return;
     }
 
-    sessionStorage.setItem('managerWarehouses', JSON.stringify(warehouses));
-    renderWarehouses(warehouses);
+    // FIX: If warehouses are bare IDs (not populated objects), fetch details
+    const firstItem = warehouses[0];
+    const needsPopulation = typeof firstItem === 'string' ||
+      (typeof firstItem === 'object' && !firstItem.name);
+
+    if (needsPopulation) {
+      // Extract IDs and fetch full warehouse details
+      const ids = warehouses.map(w => w._id || w.id || w);
+      await fetchWarehouseDetails(ids);
+    } else {
+      // Already populated objects — render directly
+      sessionStorage.setItem('managerWarehouses', JSON.stringify(warehouses));
+      renderWarehouses(warehouses);
+    }
+
   } catch (err) {
     console.error('[WarehouseSelect] fetchAllManagerWarehouses error:', err);
     setErrorMessage(err.message || 'Could not load warehouses. Please try again.');
     showState('error');
   }
+}
+
+// ─── Load warehouses ──────────────────────────────────────────────────────────
+// FIX: Always fetch fresh from API on every page load.
+// Never use sessionStorage cache for the warehouse LIST — admin may have
+// changed assignments at any time. Cache is only used for the selected
+// warehouse (warehouseId, warehouseName, warehouseCode) within a session.
+
+async function loadWarehouses() {
+  showState('loading');
+
+  // FIX: Clear stale managerWarehouses cache — always get fresh list from API.
+  // This was the root cause: old cache from a previous session with fewer
+  // warehouses was being served instead of the updated assignment.
+  sessionStorage.removeItem('managerWarehouses');
+
+  await fetchAllManagerWarehouses();
 }
 
 // ─── Auth check ───────────────────────────────────────────────────────────────
@@ -228,7 +248,6 @@ async function checkAuth() {
     return false;
   }
 
-  // Validate token silently
   try {
     const res = await fetch(`${window.API_BASE_URL}/auth/validate`, {
       headers: getHeaders()
@@ -251,7 +270,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ok = await checkAuth();
   if (!ok) return;
 
-  // Display manager name
   const name = sessionStorage.getItem('userName') || 'Manager';
   document.getElementById('managerName').textContent = name;
   document.getElementById('managerNameHeader').textContent = name;

@@ -21,18 +21,32 @@ class UserService {
         throw new ApiError(HTTP_STATUS.CONFLICT, 'User with this email already exists');
       }
 
-      // For manager: use warehouses array and set primary warehouse
-      if (userData.warehouses && userData.warehouses.length > 0) {
-        userData.warehouse = userData.warehouses[0];
+      // FIX: For manager role — ensure warehouses array is set and
+      // set warehouse (singular) to first warehouse as primary reference.
+      // For staff/viewer — clear warehouses array, only use warehouse (singular).
+      if (userData.role === 'manager') {
+        if (userData.warehouses && userData.warehouses.length > 0) {
+          userData.warehouse = userData.warehouses[0]; // primary reference
+        } else {
+          userData.warehouses = [];
+        }
+      } else {
+        // Non-manager roles only use singular warehouse field
+        userData.warehouses = [];
       }
 
       // Create new user
       const user = new User(userData);
       await user.save();
 
+      // Return with populated warehouses for correct response shape
+      const populated = await User.findById(user._id)
+        .populate('warehouse', 'code name location status')
+        .populate('warehouses', 'code name location status');
+
       logger.info('User created successfully', { userId: user._id, email: user.email });
       
-      return user.toSafeObject();
+      return populated.toSafeObject();
     } catch (error) {
       logger.error('Error creating user:', error);
       throw error;
@@ -133,32 +147,69 @@ class UserService {
 
   /**
    * Update user
+   * FIX: Use findById + save() instead of findByIdAndUpdate to avoid
+   * runValidators context bug where `this` is undefined inside required()
+   * functions on the schema, causing false validation failures.
    */
   async updateUser(userId, updateData) {
     try {
       // Don't allow password update through this method
       delete updateData.password;
 
-      // For manager: if warehouses array provided, set primary warehouse too
-      if (updateData.warehouses && updateData.warehouses.length > 0) {
-        updateData.warehouse = updateData.warehouses[0];
-      }
-
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { ...updateData, updatedAt: Date.now() },
-        { new: true, runValidators: true }
-      )
-        .populate('warehouse', 'code name location')
-        .populate('warehouses', 'code name location');
-
+      // Find the existing user document first
+      const user = await User.findById(userId);
       if (!user) {
         throw new ApiError(HTTP_STATUS.NOT_FOUND, 'User not found');
       }
 
+      // Apply allowed scalar fields
+      const scalarFields = ['name', 'email', 'role', 'status', 'phone', 'department', 'profileImage', 'currency'];
+      scalarFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          user[field] = updateData[field];
+        }
+      });
+
+      // FIX: Handle warehouse assignment based on role correctly
+      const role = updateData.role || user.role;
+
+      if (role === 'manager') {
+        // Manager uses warehouses[] array
+        if (updateData.warehouses !== undefined) {
+          if (updateData.warehouses && updateData.warehouses.length > 0) {
+            user.warehouses = updateData.warehouses;
+            user.warehouse = updateData.warehouses[0]; // keep primary in sync
+          } else {
+            user.warehouses = [];
+            user.warehouse = undefined;
+          }
+        }
+      } else if (role === 'admin') {
+        // Admin has no warehouse assignment
+        user.warehouse = undefined;
+        user.warehouses = [];
+      } else {
+        // Staff / Viewer — single warehouse only
+        if (updateData.warehouse !== undefined) {
+          user.warehouse = updateData.warehouse || undefined;
+        }
+        user.warehouses = []; // clear array for non-manager roles
+      }
+
+      user.updatedAt = Date.now();
+
+      // Save using document .save() so pre-save hooks run correctly
+      // and validators have proper `this` context
+      await user.save();
+
+      // Return with fully populated warehouses
+      const populated = await User.findById(user._id)
+        .populate('warehouse', 'code name location')
+        .populate('warehouses', 'code name location');
+
       logger.info('User updated successfully', { userId: user._id });
       
-      return user.toSafeObject();
+      return populated.toSafeObject();
     } catch (error) {
       logger.error('Error updating user:', error);
       throw error;
