@@ -17,23 +17,23 @@ const setupSingleAdmin = async () => {
 
     console.log('\n🔧 Setting up single admin account...\n');
 
-    // Delete ALL existing admin users
-    const deleteResult = await User.deleteMany({ role: USER_ROLES.ADMIN });
-    
-    if (deleteResult.deletedCount > 0) {
-      console.log(`✅ Removed ${deleteResult.deletedCount} existing admin(s)`);
-    } else {
-      console.log('ℹ️  No existing admin accounts found');
+    // Check if an admin user already exists
+    const existingAdmin = await User.findOne({ role: USER_ROLES.ADMIN });
+
+    if (existingAdmin) {
+      console.log(`ℹ️  Admin account already exists: ${existingAdmin.email} (id: ${existingAdmin._id})`);
+      console.log('No changes made. Use manage-admin or run a force script to replace existing admins.');
+      process.exit(0);
     }
 
-    // Create the ONE admin user
+    // Create the admin user since none exists. Allow overriding via environment variables.
     const adminUser = new User({
-      name: 'Muhammad Zubair',
-      email: 'admin@gmail.com',
-      password: 'admin123',
+      name: process.env.DEFAULT_ADMIN_NAME || 'Muhammad Zubair',
+      email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@gmail.com',
+      password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
       role: USER_ROLES.ADMIN,
-      phone: '+1234567890',
-      department: 'Administration',
+      phone: process.env.DEFAULT_ADMIN_PHONE || '+1234567890',
+      department: process.env.DEFAULT_ADMIN_DEPARTMENT || 'Administration',
     });
 
     await adminUser.save();
