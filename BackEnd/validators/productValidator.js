@@ -68,6 +68,12 @@ export const createProductSchema = Joi.object({
 
 export const updateProductSchema = Joi.object({
   body: Joi.object({
+    sku: Joi.string()
+      .pattern(/^[A-Z0-9-]+$/)
+      .messages({
+        'string.empty': 'SKU cannot be empty',
+        'string.pattern.base': 'SKU must contain only uppercase letters, numbers, and hyphens',
+      }),
     name: Joi.string().min(2).max(200),
     description: Joi.string().allow('').max(1000),
     category: Joi.string().valid(...Object.values(PRODUCT_CATEGORIES)),
@@ -103,6 +109,16 @@ export const updateProductSchema = Joi.object({
         );
       }
     }
+    
+    // Validate: Prevent setting status to 'available' when quantity is 0
+    // Note: This is a schema-level validation. The actual business logic validation
+    // is also performed in the service layer with access to the existing product data.
+    if (value.status === 'available' && value.quantity === 0) {
+      return helpers.message(
+        'A product with zero quantity cannot be marked as Available. Please increase the product quantity before setting its status to Available.'
+      );
+    }
+    
     return value;
   }),
   params: Joi.object({

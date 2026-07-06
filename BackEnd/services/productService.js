@@ -215,16 +215,41 @@ class ProductService {
    */
   async updateProduct(productId, updateData) {
     try {
+      // Debug logging
+      logger.info(`[UPDATE] Product ID: ${productId}, Update data: ${JSON.stringify(updateData)}`);
+      
+      // Fetch the existing product to get current quantity
+      const existingProduct = await Product.findById(productId);
+      
+      if (!existingProduct) {
+        throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Product not found');
+      }
+
       // If SKU is being updated, check for duplicates
       if (updateData.sku) {
-        const existingProduct = await Product.findOne({
+        logger.info(`[UPDATE] Checking for duplicate SKU: ${updateData.sku}`);
+        const duplicateProduct = await Product.findOne({
           sku: updateData.sku,
           _id: { $ne: productId },
         });
 
-        if (existingProduct) {
+        if (duplicateProduct) {
+          logger.warn(`[UPDATE] Duplicate SKU found: ${updateData.sku} for product ${duplicateProduct._id}`);
           throw new ApiError(HTTP_STATUS.CONFLICT, 'Product with this SKU already exists');
         }
+        logger.info(`[UPDATE] SKU is unique, proceeding with update`);
+      }
+
+      // Validate: Prevent setting status to 'available' when quantity is 0
+      const productQuantity = updateData.quantity !== undefined ? updateData.quantity : existingProduct.quantity;
+      const newStatus = updateData.status;
+      
+      if (newStatus === PRODUCT_STATUS.AVAILABLE && productQuantity === 0) {
+        logger.warn(`[UPDATE] Attempted to set status to 'available' for product with zero quantity: ${productId}`);
+        throw new ApiError(
+          HTTP_STATUS.BAD_REQUEST,
+          'A product with zero quantity cannot be marked as Available. Please increase the product quantity before setting its status to Available.'
+        );
       }
 
       // Validate warehouse quantity against total quantity when both are provided
@@ -250,10 +275,6 @@ class ProductService {
         { ...updateData, updatedAt: Date.now() },
         { new: true, runValidators: true }
       ).populate('supplier', 'name email phone');
-
-      if (!product) {
-        throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Product not found');
-      }
 
       logger.info(`Product updated: ${product._id}`);
       return product;

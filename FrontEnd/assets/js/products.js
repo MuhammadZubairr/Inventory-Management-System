@@ -340,6 +340,31 @@ async function loadProducts() {
   }
 }
 
+/**
+ * Get the appropriate Bootstrap badge class for product status
+ * @param {string} status - Product status from backend
+ * @returns {string} Bootstrap badge class
+ */
+function getStatusBadgeClass(status) {
+  const statusMap = {
+    'available': 'bg-success',
+    'out_of_stock': 'bg-danger',
+    'low_stock': 'bg-warning',
+    'discontinued': 'bg-secondary'
+  };
+  return statusMap[status] || 'bg-secondary';
+}
+
+/**
+ * Format status text for display (replace underscores with spaces)
+ * @param {string} status - Product status from backend
+ * @returns {string} Formatted status text
+ */
+function formatStatusText(status) {
+  if (!status) return 'Unknown';
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
 // Display products in table
 function displayProducts(products) {
   console.log('displayProducts called with:', products);
@@ -365,10 +390,9 @@ function displayProducts(products) {
       <td>${product.quantity}</td>
       <td>${typeof window.formatPrice === 'function' ? window.formatPrice(product.unitPrice || 0) : `Rs ${product.unitPrice ? product.unitPrice.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}`}</td>
       <td>
-        <span class="badge ${product.status === 'available' ? 'bg-success' : 'bg-secondary'}">
-          ${product.status}
+        <span class="badge ${getStatusBadgeClass(product.status)}">
+          ${formatStatusText(product.status)}
         </span>
-        ${product.quantity <= (product.minStockLevel || 5 ) ? '<span class="badge bg-warning ms-1">Low Stock</span>' : ''}
       </td>
       <td>${product.supplier?.name || 'N/A'}</td>
       <td>
@@ -783,7 +807,21 @@ async function handleEditProduct(e) {
     status: formData.get('status')
   };
 
+  // Frontend validation: Prevent setting status to 'available' when quantity is 0
+  if (productData.status === 'available' && productData.quantity === 0) {
+    showAlert(
+      'A product with zero quantity cannot be marked as Available. Please increase the product quantity before setting its status to Available.',
+      'danger'
+    );
+    return;
+  }
+
   try {
+    // Debug: Log what we're sending
+    console.log('[FRONTEND] Updating product:', currentEditId);
+    console.log('[FRONTEND] Product data:', productData);
+    console.log('[FRONTEND] SKU being sent:', productData.sku);
+    
     const response = await fetch(`${API_BASE_URL}/products/${currentEditId}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -791,11 +829,46 @@ async function handleEditProduct(e) {
     });
 
     const data = await response.json();
+    
+    // Debug: Log what we received
+    console.log('[FRONTEND] Response status:', response.status);
+    console.log('[FRONTEND] Response data:', data);
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to update product');
+      // Display backend validation errors
+      let errorMessage = 'Failed to update product';
+      
+      // Try to get message from response
+      if (data.message) {
+        errorMessage = data.message;
+      } else if (data.msg) {
+        errorMessage = data.msg;
+      }
+      
+      // Handle validation errors array
+      if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+        const errors = data.errors.map(err => {
+          // Handle string errors
+          if (typeof err === 'string') return err;
+          // Handle object errors with message property
+          if (err.message) return err.message;
+          if (err.msg) return err.msg;
+          // Fallback: try to extract any meaningful text
+          if (typeof err === 'object') {
+            return Object.values(err).find(val => typeof val === 'string') || 'Validation error';
+          }
+          return String(err);
+        });
+        errorMessage = errors.join('. ');
+      }
+      
+      // Clean up the error message
+      errorMessage = errorMessage.replace(/[{}]/g, '').replace(/"/g, '');
+      
+      throw new Error(errorMessage);
     }
 
+    // Only show success message if update actually succeeded
     showAlert('Product updated successfully', 'success');
     
     // Close modal
@@ -806,7 +879,36 @@ async function handleEditProduct(e) {
     loadProducts();
   } catch (error) {
     console.error('Error updating product:', error);
-    showAlert(error.message, 'danger');
+    
+    // Better error message handling
+    let displayMessage = 'Failed to update product';
+    
+    // Try to extract error message from various possible sources
+    if (error.message && typeof error.message === 'string' && !error.message.includes('{')) {
+      // Clean message without JSON objects
+      displayMessage = error.message;
+    } else if (typeof error === 'string') {
+      displayMessage = error;
+    } else if (error.data?.message) {
+      displayMessage = error.data.message;
+    } else if (error.response?.data?.message) {
+      displayMessage = error.response.data.message;
+    }
+    
+    // Final cleanup - remove any JSON artifacts
+    displayMessage = String(displayMessage)
+      .replace(/[{}[\]\\]/g, '')
+      .replace(/"/g, '')
+      .replace(/,\s*,/g, ',')
+      .trim();
+    
+    // If message is still garbled, use a generic message
+    if (displayMessage.length > 200 || displayMessage.includes('Object') || displayMessage.includes('Array')) {
+      displayMessage = 'Failed to update product. Please check your input and try again.';
+    }
+    
+    showAlert(displayMessage, 'danger');
+    // Keep modal open so user can correct the error
   }
 }
 
@@ -838,11 +940,31 @@ async function deleteProduct(productId) {
 
 // Show alert message
 function showAlert(message, type = 'info') {
+  // Clean the message to remove any JSON artifacts or object references
+  let cleanMessage = String(message);
+  
+  // Remove JSON-like structures
+  cleanMessage = cleanMessage
+    .replace(/[{}[\]\\]/g, '')
+    .replace(/"/g, '')
+    .replace(/,\s*,/g, ',')
+    .replace(/,\s*\./g, '.')
+    .replace(/\.\s*\./g, '.')
+    .trim();
+  
+  // If message contains object/array references, use generic message
+  if (cleanMessage.includes('Object') || 
+      cleanMessage.includes('Array') || 
+      cleanMessage.includes('[object') ||
+      cleanMessage.length > 300) {
+    cleanMessage = 'Operation failed. Please check your input and try again.';
+  }
+  
   const alertDiv = document.createElement('div');
   alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
   alertDiv.style.zIndex = '9999';
   alertDiv.innerHTML = `
-    ${message}
+    ${cleanMessage}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   `;
   document.body.appendChild(alertDiv);

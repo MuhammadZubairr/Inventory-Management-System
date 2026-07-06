@@ -106,27 +106,95 @@ function displayAdminInfo(user) {
 }
 
 // Logout function
-function handleLogout() {
+async function handleLogout() {
   const token = sessionStorage.getItem('token');
 
-  if (token) {
-    // Call backend logout endpoint
-    fetch(`${window.API_BASE_URL}/auth/logout`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    }).catch(err => console.error('Logout error:', err));
+  try {
+    // Call backend logout endpoint if token exists
+    if (token) {
+      await fetch(`${window.API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+  } catch (err) {
+    console.error('Logout API error:', err);
+    // Continue with logout even if API call fails
   }
 
-  // Clear session storage (per-tab)
+  // Clear all authentication data
   sessionStorage.clear();
-  window.location.href = '/pages/login.html';
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('sessionActive');
+
+  // Show success message
+  showToast('Logged out successfully', 'success');
+
+  // Redirect to login page
+  setTimeout(() => {
+    window.location.href = '/pages/login.html';
+  }, 500);
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+  // Remove existing toast if any
+  const existingToast = document.querySelector('.custom-toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `custom-toast alert alert-${type} position-fixed top-0 end-0 m-3 shadow`;
+  toast.style.cssText = 'z-index: 9999; min-width: 250px; animation: slideIn 0.3s ease-out;';
+  toast.innerHTML = `
+    <div class="d-flex align-items-center">
+      <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill'} me-2"></i>
+      <div class="flex-grow-1">${message}</div>
+      <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+    </div>
+  `;
+
+  // Add animation style if not exists
+  if (!document.getElementById('toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'toast-styles';
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(toast);
+
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease-out reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 // Setup logout buttons
 function setupLogoutButtons() {
   const logoutButtons = document.querySelectorAll('.logout-btn, [href="#logout"]');
   logoutButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    // Remove existing listeners by cloning and replacing
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    // Add new listener
+    newBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       handleLogout();
@@ -199,6 +267,15 @@ window.addEventListener('DOMContentLoaded', () => {
   const token = sessionStorage.getItem('token');
   if (token) startAdminAuthHeartbeat();
 });
+
+// Re-setup logout buttons when sidebar is loaded dynamically
+window.setupLogoutButtonsAfterSidebarLoad = function() {
+  // Wait a bit for the sidebar HTML to be fully inserted
+  setTimeout(() => {
+    setupLogoutButtons();
+    console.log('✅ Logout buttons re-initialized after sidebar load');
+  }, 100);
+};
 
 // Export functions for use in other scripts
 window.adminAuth = {

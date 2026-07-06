@@ -90,6 +90,12 @@ function updateAdminName() {
 
 // Handle logout
 function handleLogout() {
+  // Use admin-auth.js logout if available (for admin pages)
+  if (typeof window.adminAuth !== 'undefined' && typeof window.adminAuth.logout === 'function') {
+    window.adminAuth.logout();
+    return;
+  }
+  
   // Get user role to determine which login page to redirect to
   const userRole = sessionStorage.getItem('userRole');
 
@@ -302,7 +308,11 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof setupLogoutButtons === 'undefined') {
     const logoutButtons = document.querySelectorAll('.logout-btn');
     logoutButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
+      // Clone and replace to remove any existing listeners
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+      
+      newButton.addEventListener('click', function(e) {
         e.preventDefault();
         handleLogout();
       });

@@ -523,6 +523,11 @@
               link.classList.add('active');
             }
           });
+          
+          // Re-initialize logout buttons after sidebar loads
+          if (typeof window.setupLogoutButtonsAfterSidebarLoad === 'function') {
+            window.setupLogoutButtonsAfterSidebarLoad();
+          }
         })
         .catch(error => console.error('Error loading sidebar:', error));
     </script>

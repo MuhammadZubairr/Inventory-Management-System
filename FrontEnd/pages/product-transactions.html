@@ -223,6 +223,11 @@
         document.querySelectorAll('.nav-link').forEach(l => {
           if (l.getAttribute('href') === `/pages/${p}`) l.classList.add('active');
         });
+        
+        // Re-initialize logout buttons after sidebar loads
+        if (typeof window.setupLogoutButtonsAfterSidebarLoad === 'function') {
+          window.setupLogoutButtonsAfterSidebarLoad();
+        }
       }).catch(e => console.error('Error loading sidebar:', e));
     </script>
   </body>
