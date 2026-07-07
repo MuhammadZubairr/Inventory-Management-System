@@ -374,6 +374,23 @@
                   </select>
                 </div>
               </div>
+              <!-- Multi-warehouse assignment (same as Add Product) -->
+              <div class="mb-1">
+                <label class="form-label mb-1 fw-semibold">
+                  Assign to Warehouses
+                  <span class="text-muted fw-normal small">(optional)</span>
+                </label>
+                <div id="editWarehouseStockList" class="border rounded p-3 bg-light" style="max-height: 210px; overflow-y: auto;">
+                  <div class="text-muted small d-flex align-items-center gap-2">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    Loading warehouses…
+                  </div>
+                </div>
+                <div id="editWarehouseQtyError" class="text-danger small mt-1" style="display:none;"></div>
+                <div class="form-text mt-1">
+                  <i class="bi bi-info-circle me-1"></i>Check a warehouse to allocate stock. Total allocated cannot exceed the product quantity.
+                </div>
+              </div>
             </form>
           </div>
           <div class="modal-footer">

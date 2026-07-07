@@ -1,5 +1,6 @@
 import Product from '../models/Product.js';
 import Transaction from '../models/Transaction.js';
+import Warehouse from '../models/Warehouse.js';
 import ApiError from '../utils/ApiError.js';
 import { HTTP_STATUS, PRODUCT_STATUS, TRANSACTION_TYPES, TRANSACTION_STATUS } from '../config/constants.js';
 import logger from '../utils/logger.js';
@@ -266,6 +267,22 @@ class ProductService {
           throw new ApiError(
             HTTP_STATUS.BAD_REQUEST,
             `Assigned warehouse quantity (${totalWarehouseQty}) exceeds total product quantity (${updateData.quantity}).`
+          );
+        }
+      }
+
+      // Validate that all assigned warehouses are active
+      if (updateData.warehouseStock && updateData.warehouseStock.length > 0) {
+        const warehouseIds = updateData.warehouseStock.map(ws => ws.warehouse);
+        const activeWarehouses = await Warehouse.find({
+          _id: { $in: warehouseIds },
+          status: 'active'
+        });
+
+        if (activeWarehouses.length !== warehouseIds.length) {
+          throw new ApiError(
+            HTTP_STATUS.BAD_REQUEST,
+            'One or more selected warehouses are not active or do not exist.'
           );
         }
       }

@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadProducts();
   loadCategories();
   loadSuppliers();
-  loadWarehouses(); // Load warehouses as checkbox list
+  loadWarehouses(); // Load warehouses as checkbox list (for add product modal)
+  loadWarehousesForEdit(); // Load warehouses for edit modal dropdown
 
   // Event listeners
   if (addProductForm) {
@@ -63,6 +64,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         inp.disabled = true;
       });
       const errorEl = document.getElementById('warehouseQtyError');
+      if (errorEl) errorEl.style.display = 'none';
+    });
+  }
+
+  // Reset warehouse checklist when the Edit Product modal is closed
+  const editModal = document.getElementById('editProductModal');
+  if (editModal) {
+    editModal.addEventListener('hidden.bs.modal', () => {
+      document.querySelectorAll('#editWarehouseStockList .wh-checkbox').forEach(cb => {
+        cb.checked = false;
+      });
+      document.querySelectorAll('#editWarehouseStockList .wh-qty-input').forEach(inp => {
+        inp.value = '0';
+        inp.disabled = true;
+      });
+      const errorEl = document.getElementById('editWarehouseQtyError');
       if (errorEl) errorEl.style.display = 'none';
     });
   }
@@ -476,6 +493,154 @@ async function loadSuppliers() {
   }
 }
 
+// Load warehouses for edit modal (multi-warehouse allocation like Add Product)
+async function loadWarehousesForEdit() {
+  const list = document.getElementById('editWarehouseStockList');
+  if (!list) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/warehouses`, {
+      headers: getHeaders()
+    });
+
+    const data = await response.json();
+
+    // Check for session expiry
+    if (window.handleApiError && window.handleApiError(response, data)) return;
+
+    if (!response.ok) {
+      list.innerHTML = '<div class="text-muted small text-danger">Could not load warehouses.</div>';
+      return;
+    }
+
+    const warehouses = data.data?.warehouses || [];
+    console.log(`🏢 [Products] Found ${warehouses.length} warehouses for edit modal`);
+
+    if (warehouses.length === 0) {
+      list.innerHTML = '<div class="text-muted small">No warehouses available.</div>';
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="d-flex align-items-center gap-2 mb-1 pb-1 border-bottom">
+        <div class="form-check mb-0 flex-grow-1" style="min-width: 0;">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="edit_wh_check_all"
+          >
+          <label class="form-check-label fw-semibold" for="edit_wh_check_all">Select All</label>
+        </div>
+      </div>
+    ` + warehouses.map(wh => `
+      <div class="d-flex align-items-center gap-2 mb-2 warehouse-row" data-id="${wh._id}">
+        <div class="form-check mb-0 flex-grow-1" style="min-width: 0;">
+          <input
+            class="form-check-input wh-checkbox"
+            type="checkbox"
+            id="edit_wh_check_${wh._id}"
+            value="${wh._id}"
+          >
+          <label class="form-check-label text-truncate w-100" for="edit_wh_check_${wh._id}" title="${wh.code} — ${wh.name}">
+            <span class="fw-semibold">${wh.code}</span>
+            <span class="text-muted">— ${wh.name}</span>
+          </label>
+        </div>
+        <input
+          type="number"
+          class="form-control form-control-sm wh-qty-input"
+          id="edit_wh_qty_${wh._id}"
+          placeholder="Qty"
+          min="0"
+          value="0"
+          style="width: 90px; flex-shrink: 0;"
+          disabled
+          aria-label="Quantity for ${wh.name}"
+        >
+      </div>
+    `).join('');
+
+    // Bind Select All checkbox
+    const selectAllCb = list.querySelector('#edit_wh_check_all');
+    if (selectAllCb) {
+      selectAllCb.addEventListener('change', function () {
+        list.querySelectorAll('.wh-checkbox').forEach(cb => {
+          cb.checked = this.checked;
+          const qtyInput = document.getElementById('edit_wh_qty_' + cb.value);
+          if (qtyInput) {
+            qtyInput.disabled = !this.checked;
+            if (!this.checked) qtyInput.value = '0';
+          }
+        });
+        validateEditWarehouseQty();
+      });
+    }
+
+    // Bind checkbox → enable/disable qty input
+    list.querySelectorAll('.wh-checkbox').forEach(cb => {
+      cb.addEventListener('change', function () {
+        const qtyInput = document.getElementById('edit_wh_qty_' + this.value);
+        if (this.checked) {
+          qtyInput.disabled = false;
+          qtyInput.focus();
+          qtyInput.select();
+        } else {
+          qtyInput.disabled = true;
+          qtyInput.value = '0';
+        }
+        // Update Select All state
+        const allCbs = list.querySelectorAll('.wh-checkbox');
+        const allChecked = Array.from(allCbs).every(c => c.checked);
+        const noneChecked = Array.from(allCbs).every(c => !c.checked);
+        if (selectAllCb) {
+          selectAllCb.checked = allChecked;
+          selectAllCb.indeterminate = !allChecked && !noneChecked;
+        }
+        validateEditWarehouseQty();
+      });
+    });
+
+    // Revalidate whenever a qty changes
+    list.querySelectorAll('.wh-qty-input').forEach(inp => {
+      inp.addEventListener('input', validateEditWarehouseQty);
+    });
+
+    console.log(`✅ [Products] Rendered ${warehouses.length} warehouses for edit modal`);
+  } catch (error) {
+    console.error('❌ [Products] Error loading warehouses for edit modal:', error);
+    if (list) {
+      list.innerHTML = '<div class="text-muted small text-danger">Failed to load warehouses.</div>';
+    }
+  }
+}
+
+/**
+ * Validate that the sum of all selected warehouse quantities
+ * does not exceed the total product quantity (for edit form).
+ * @returns {boolean} true when valid
+ */
+function validateEditWarehouseQty() {
+  const totalQty = parseInt(document.getElementById('editQuantity')?.value) || 0;
+  let totalWHQty = 0;
+
+  document.querySelectorAll('#editWarehouseStockList .wh-checkbox:checked').forEach(cb => {
+    totalWHQty += parseInt(document.getElementById('edit_wh_qty_' + cb.value)?.value) || 0;
+  });
+
+  const errorEl = document.getElementById('editWarehouseQtyError');
+  if (!errorEl) return true;
+
+  if (totalWHQty > totalQty) {
+    errorEl.textContent =
+      `Assigned warehouse quantity (${totalWHQty}) exceeds total product quantity (${totalQty}).`;
+    errorEl.style.display = 'block';
+    return false;
+  }
+
+  errorEl.style.display = 'none';
+  return true;
+}
+
 // Load warehouses and render the multi-select checkbox list
 async function loadWarehouses() {
   const list = document.getElementById('warehouseStockList');
@@ -779,6 +944,26 @@ async function showEditModal(productId) {
     document.getElementById('editSupplierSelect').value = product.supplier?._id || '';
     document.getElementById('editStatus').value = product.status;
 
+    // Pre-populate warehouse checkboxes with existing warehouse stock data
+    if (product.warehouseStock && product.warehouseStock.length > 0) {
+      product.warehouseStock.forEach(ws => {
+        const warehouseId = ws.warehouse?._id || ws.warehouse;
+        const checkbox = document.getElementById(`edit_wh_check_${warehouseId}`);
+        const qtyInput = document.getElementById(`edit_wh_qty_${warehouseId}`);
+        
+        if (checkbox) {
+          checkbox.checked = true;
+          if (qtyInput) {
+            qtyInput.disabled = false;
+            qtyInput.value = ws.quantity || 0;
+          }
+        }
+      });
+      console.log(`✅ Pre-populated ${product.warehouseStock.length} warehouse(s) with stock data`);
+    } else {
+      console.log('ℹ️ No warehouse assigned to product');
+    }
+
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
     modal.show();
@@ -795,6 +980,8 @@ async function handleEditProduct(e) {
   if (!currentEditId) return;
 
   const formData = new FormData(editProductForm);
+  const minStockValue = formData.get('reorderLevel');
+  
   const productData = {
     sku: formData.get('sku'),
     name: formData.get('name'),
@@ -806,6 +993,35 @@ async function handleEditProduct(e) {
     supplier: formData.get('supplier') || undefined,
     status: formData.get('status')
   };
+
+  // Collect all checked warehouses with their quantities (same as Add Product)
+  const selectedWarehouses = [];
+  document.querySelectorAll('#editWarehouseStockList .wh-checkbox:checked').forEach(cb => {
+    const qty = parseInt(document.getElementById('edit_wh_qty_' + cb.value)?.value) || 0;
+    selectedWarehouses.push({
+      warehouse: cb.value,
+      quantity: qty,
+      minStockLevel: minStockValue ? parseInt(minStockValue) : 10
+    });
+  });
+
+  // Frontend validation: total warehouse qty must not exceed product quantity
+  if (selectedWarehouses.length > 0) {
+    const totalWHQty = selectedWarehouses.reduce((sum, ws) => sum + ws.quantity, 0);
+    if (totalWHQty > productData.quantity) {
+      showAlert(
+        `Assigned warehouse quantity (${totalWHQty}) exceeds total product quantity (${productData.quantity}).`,
+        'danger'
+      );
+      // Make sure the error indicator is visible too
+      validateEditWarehouseQty();
+      return;
+    }
+    productData.warehouseStock = selectedWarehouses;
+  } else {
+    // No warehouses selected - clear warehouse stock
+    productData.warehouseStock = [];
+  }
 
   // Frontend validation: Prevent setting status to 'available' when quantity is 0
   if (productData.status === 'available' && productData.quantity === 0) {
